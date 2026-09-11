@@ -26,7 +26,7 @@ func Build(Parms *structures.Parms) []string {
 		cli.Info(*Parms, "Construyendo %s", filepath.Base(repository))
 
 		rc := buildRepository(repository, *Parms)
-		if handleRC(Parms, rc) == RC.Skip {
+		if RC.Has(handleRC(Parms, rc), RC.Skip) {
 			addToBlackList(Parms, repository)
 			continue
 		}

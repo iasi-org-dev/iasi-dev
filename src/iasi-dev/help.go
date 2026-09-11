@@ -32,7 +32,7 @@ func printHelp() {
 	  -t         Continue when an operation fails.
 	
 	Parameters:
-	  --exclude value[,value]*  Add exclusions. Existing files are read one exclusion per line; .git and tests are always excluded.
+	  --exclude value[,value]*  Add exclusions. Existing files are read one exclusion per line; .git, .github and tests are always excluded.
 	  --format value            Output format passed to build.
 	  --message value           Commit message.
 	`)

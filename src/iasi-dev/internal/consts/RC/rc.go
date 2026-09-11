@@ -15,8 +15,10 @@ const (
 
 	NoticeMask = 0x0F
 	ErrorMask  = 0xF0
+	ResultMask = 0xFF
 
-	// Internal workflow marker. It is never exposed as the process exit code.
+	// Internal workflow marker. Control flags live above the result byte and are
+	// never accumulated into, or exposed as, the process return code.
 	Skip = 0x100
 )
 
@@ -25,23 +27,38 @@ type Stop struct {
 	Code int
 }
 
-func IsErroneous(rc int) bool {
-	return rc&ErrorMask != 0
+// Result returns only the externally observable RC byte.
+func Result(rc int) int {
+	return rc & ResultMask
 }
 
+func IsErroneous(rc int) bool {
+	return Result(rc)&ErrorMask != 0
+}
+
+// Has reports whether rc contains flag. It is intended primarily for internal
+// control flags such as Skip.
+func Has(rc int, flag int) bool {
+	return rc&flag != 0
+}
+
+// Add accumulates only the result byte. Internal control flags are deliberately
+// not part of the cumulative return code.
 func Add(current *int, rc int) int {
+	value := Result(rc)
 	if current == nil {
-		return rc
+		return value
 	}
 
-	*current |= rc
+	*current = Result(*current) | value
 	return *current
 }
 
+// Value returns the externally observable RC byte.
 func Value(current *int) int {
 	if current == nil {
 		return OK
 	}
 
-	return *current
+	return Result(*current)
 }
