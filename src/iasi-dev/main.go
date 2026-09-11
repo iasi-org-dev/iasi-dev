@@ -17,6 +17,7 @@ func main() {
 
 func run() (exitCode int) {
 	exitCode = RC.OK
+	veryVerbose := false
 
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -27,6 +28,8 @@ func run() (exitCode int) {
 				panic(recovered)
 			}
 		}
+
+		exitCode = externalRC(exitCode, veryVerbose)
 	}()
 
 	if len(os.Args) == 1 {
@@ -36,6 +39,7 @@ func run() (exitCode int) {
 
 	command := os.Args[1]
 	Parms := args.Parse(command, os.Args[2:])
+	veryVerbose = Parms.Verbose == 7
 	commands.SetDebug(Parms.Debug)
 
 	if command == "help" {
@@ -76,4 +80,14 @@ func run() (exitCode int) {
 	}
 
 	return RC.Value(Parms.RC)
+}
+
+// externalRC adapts the internal IASI return code to the process exit code.
+// NothingToDo is reported as success unless very-verbose mode (-V) is active.
+func externalRC(rc int, veryVerbose bool) int {
+	rc = RC.Result(rc)
+	if rc == RC.NothingToDo && !veryVerbose {
+		return RC.OK
+	}
+	return rc
 }

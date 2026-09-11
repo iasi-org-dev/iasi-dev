@@ -22,7 +22,7 @@ func printHelp() {
 	  -h         Show help.
 	  -s         Silent output.
 	  -v         Verbose output.
-	  -V         Very verbose output.
+	  -V         Very verbose output; preserves process RC 1 (NothingToDo).
 	  -a         Execute previous workflow stages too.
 	  -c         Use intermediate workflows as checkpoints.
 	  -d         Show debug messages.

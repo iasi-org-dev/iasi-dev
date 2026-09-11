@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
@@ -110,5 +111,5 @@ func writeCommand(logFile *os.File, directory string, name string, args ...strin
 	if logFile == nil {
 		return
 	}
-	fmt.Fprintf(logFile, "%s > %s %s\n", directory, name, strings.Join(args, " "))
+	fmt.Fprintf(logFile, "%s - Command: %s %s\n", time.Now().Format("15:04:05"), name, strings.Join(args, " "))
 }
