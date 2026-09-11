@@ -7,61 +7,47 @@ import (
 
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/commands"
-	"iasi-dev/internal/consts/R"
 	"iasi-dev/internal/consts/RC"
-	iasiPkg "iasi-dev/internal/iasi"
 	"iasi-dev/internal/structures"
 )
 
-// Publish publishes the selected IASI projects and returns the projects that remain active.
+// Publish delegates publication to iasi.quarto once per selected Git repository.
 func Publish(Parms *structures.Parms) []string {
-	if Parms.Debug { fmt.Printf("Publish: projects=%v\n", Parms.Projects) }
+	if Parms.Debug {
+		fmt.Printf("Publish: repos=%v\n", Parms.Repos)
+	}
 	targets := []string{}
-	rc := RC.OK
 
-	for _, project := range Parms.Projects {
-		cli.Info(*Parms, "Publicando %s", filepath.Base(project))
-
-		iasi, ok := iasiPkg.Read(project, *Parms)
-		if !ok {
-			rc = checkTolerant(*Parms, RC.Publish)
-		} else {
-			if !isPublishable(iasi.Type) {
-				targets = append(targets, project)
-				continue
-			}
-			rc = publishQuarto(project, *Parms)
+	for _, repository := range Parms.Repos {
+		if isBlackListed(*Parms, repository) {
+			continue
 		}
+		cli.Info(*Parms, "Publicando %s", filepath.Base(repository))
 
+		rc := publishRepository(repository, *Parms)
 		if rc == RC.Skip {
-			addToBlackList(Parms, project)
+			addToBlackList(Parms, repository)
 			continue
 		}
 
-		targets = append(targets, project)
+		targets = append(targets, repository)
 	}
 
 	return targets
 }
 
-// publishQuarto publishes an IASI project through iasi.quarto.
-func publishQuarto(project string, Parms structures.Parms) int {
+// publishRepository delegates project discovery, applicability and publication semantics to iasi.quarto.
+func publishRepository(repository string, Parms structures.Parms) int {
 	parameters := []string{}
-
-	if Parms.Force { parameters = append(parameters, "force = TRUE") }
+	if Parms.Force {
+		parameters = append(parameters, "force = TRUE")
+	}
 
 	expression := "iasi.quarto::publish(" + strings.Join(parameters, ", ") + ")"
-
-	result := commands.RunFriendlyLogged(project, Parms.LogFile, "Rscript", "-e", expression)
-	if RC.IsErroneous(result.RC) { return checkTolerant(Parms, RC.Publish) }
+	result := commands.RunFriendlyLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	if RC.IsErroneous(result.RC) {
+		return checkTolerant(Parms, RC.Publish)
+	}
 
 	return RC.OK
-}
-
-// isPublishable reports whether an IASI project type can be published.
-func isPublishable(projectType string) bool {
-	switch projectType {
-	case R.PACKAGE: return false
-	default:        return true
-	}
 }

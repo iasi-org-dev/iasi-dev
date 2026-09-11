@@ -11,13 +11,22 @@ func IsRepo(directory string) bool {
 	return err == nil
 }
 
-// IsFile reports whether path exists and is a regular filesystem entry rather than a directory.
-func IsFile(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
-}
+// FindRepo returns the nearest Git repository containing directory.
+func FindRepo(directory string) string {
+	path, err := filepath.Abs(directory)
+	if err != nil {
+		return ""
+	}
 
-// IsProject reports whether directory is the root of an IASI project.
-func IsProject(directory string) bool {
-	return IsFile(filepath.Join(directory, "_iasi.yml")) || IsFile(filepath.Join(directory, ".iasi.yml"))
+	for {
+		if IsRepo(path) {
+			return filepath.Clean(path)
+		}
+
+		parent := filepath.Dir(path)
+		if parent == path {
+			return ""
+		}
+		path = parent
+	}
 }

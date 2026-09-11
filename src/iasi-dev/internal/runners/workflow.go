@@ -6,40 +6,60 @@ import (
 	"iasi-dev/internal/structures"
 )
 
-// Workflow executes the selected workflow.
+// Workflow executes the selected workflow one Git repository at a time.
 func Workflow(Parms *structures.Parms) {
-	projects := append([]string{}, Parms.Projects...)
+	repositories := append([]string{}, Parms.Repos...)
 
-	for _, project := range projects {
-		Parms.Projects = []string{project}
+	for _, repository := range repositories {
+		Parms.Repos = []string{repository}
 
 		switch Parms.Subcommand {
-		case "build":   workflowBuild(true, Parms)
-		case "publish": workflowPublish(true, Parms)
-		case "release": workflowRelease(true, Parms)
-		default:        cli.Error(RC.InvalidArguments, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
+		case "build":
+			workflowBuild(true, Parms)
+		case "publish":
+			workflowPublish(true, Parms)
+		case "release":
+			workflowRelease(true, Parms)
+		default:
+			cli.Error(RC.InvalidArguments, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
 		}
 	}
 }
 
-// workflowBuild builds projects and commits when standalone or used as a checkpoint.
+// workflowBuild builds and commits when standalone or used as a checkpoint.
 func workflowBuild(standalone bool, Parms *structures.Parms) {
-	Parms.Projects = Build(Parms)
-	if standalone || Parms.Checkpoints { Commit(*Parms) }
+	Parms.Repos = Build(Parms)
+	if standalone || Parms.Checkpoints {
+		Parms.Repos = Commit(*Parms)
+	}
 }
 
-// workflowPublish optionally builds first, publishes projects and commits when required.
+// workflowPublish optionally builds first, publishes and commits when required.
 func workflowPublish(standalone bool, Parms *structures.Parms) {
-	if Parms.All { workflowBuild(false, Parms) }
+	if Parms.All {
+		workflowBuild(false, Parms)
+	}
+	if len(Parms.Repos) == 0 {
+		return
+	}
 
-	Parms.Projects = Publish(Parms)
-	if standalone || Parms.Checkpoints { Commit(*Parms) }
+	Parms.Repos = Publish(Parms)
+	if standalone || Parms.Checkpoints {
+		Parms.Repos = Commit(*Parms)
+	}
 }
 
-// workflowRelease optionally runs previous stages, releases projects and commits when required.
+// workflowRelease optionally runs previous stages, releases and commits when required.
 func workflowRelease(standalone bool, Parms *structures.Parms) {
-	if Parms.All { workflowPublish(false, Parms) }
+	if Parms.All {
+		workflowPublish(false, Parms)
+	}
+	if len(Parms.Repos) == 0 {
+		return
+	}
 
-	Parms.Projects = Release(Parms)
-	if standalone || Parms.Checkpoints { Commit(*Parms) }
+	Parms.Repos = Release(Parms)
+	if standalone || Parms.Checkpoints {
+		Parms.Repos = Commit(*Parms)
+	}
 }

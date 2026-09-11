@@ -38,7 +38,6 @@ func Sync(Parms structures.Parms) {
 	}
 
 	synced := 0
-
 	for _, entry := range entries {
 		count, err := syncEntry(workspace, common, entry, Parms)
 		if err == nil {
@@ -57,7 +56,6 @@ func Sync(Parms structures.Parms) {
 	cli.Success(Parms, "%d copia(s) sincronizada(s) desde iasi-common.", synced)
 }
 
-// syncEntry resolves one canonical source and updates every existing copy outside iasi-common.
 func syncEntry(workspace string, common string, entry string, Parms structures.Parms) (int, error) {
 	source, pathEntry, err := resolveSyncSource(common, entry)
 	if err != nil {
@@ -87,7 +85,6 @@ func syncEntry(workspace string, common string, entry string, Parms structures.P
 	}
 
 	synced := 0
-
 	for _, target := range targets {
 		cli.Verbose(Parms, "\tSincronizando %s", target)
 
@@ -112,10 +109,9 @@ func syncEntry(workspace string, common string, entry string, Parms structures.P
 	return synced, nil
 }
 
-// resolveSyncSource resolves a name or a path relative to iasi-common to one canonical source.
 func resolveSyncSource(common string, entry string) (string, bool, error) {
 	cleanEntry := filepath.Clean(entry)
-	pathEntry := strings.ContainsAny(entry, `/\\`)
+	pathEntry := strings.ContainsAny(entry, `/\`)
 
 	if pathEntry {
 		if filepath.IsAbs(cleanEntry) {
@@ -144,7 +140,6 @@ func resolveSyncSource(common string, entry string) (string, bool, error) {
 		if path != common && item.IsDir() && ignoredSyncDirectory(item.Name()) {
 			return filepath.SkipDir
 		}
-
 		if path != common && item.Name() == cleanEntry {
 			matches = append(matches, path)
 		}
@@ -165,7 +160,6 @@ func resolveSyncSource(common string, entry string) (string, bool, error) {
 	return matches[0], false, nil
 }
 
-// findSyncTargets finds only copies that already exist outside iasi-common.
 func findSyncTargets(workspace string, common string, source string, entry string, pathEntry bool) ([]string, error) {
 	sourceInfo, err := os.Lstat(source)
 	if err != nil {
@@ -190,7 +184,6 @@ func findSyncTargets(workspace string, common string, source string, entry strin
 		if path == workspace {
 			return nil
 		}
-
 		if sourceInfo.IsDir() != item.IsDir() {
 			return nil
 		}
@@ -207,19 +200,16 @@ func findSyncTargets(workspace string, common string, source string, entry strin
 		if item.IsDir() {
 			return filepath.SkipDir
 		}
-
 		return nil
 	})
 
 	return targets, err
 }
 
-// ignoredSyncDirectory reports directories that sync must never traverse.
 func ignoredSyncDirectory(name string) bool {
 	return name == ".git" || name == "tests"
 }
 
-// pathEndsWith reports whether path ends with the same path components as suffix.
 func pathEndsWith(path string, suffix string) bool {
 	path = filepath.Clean(path)
 	suffix = filepath.Clean(suffix)
@@ -244,7 +234,6 @@ func pathEndsWith(path string, suffix string) bool {
 	return true
 }
 
-// splitPath splits a cleaned path into platform-independent path components.
 func splitPath(path string) []string {
 	path = filepath.ToSlash(filepath.Clean(path))
 	parts := strings.Split(path, "/")
@@ -259,7 +248,6 @@ func splitPath(path string) []string {
 	return result
 }
 
-// pathInside reports whether path is common itself or a descendant of common.
 func pathInside(common string, path string) (bool, error) {
 	relative, err := filepath.Rel(common, path)
 	if err != nil {
@@ -269,7 +257,6 @@ func pathInside(common string, path string) (bool, error) {
 	return relative == "." || (relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))), nil
 }
 
-// mergeDirectory copies source into an existing target without deleting target-only entries.
 func mergeDirectory(source string, target string) error {
 	return filepath.WalkDir(source, func(path string, item os.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -290,7 +277,6 @@ func mergeDirectory(source string, target string) error {
 		if item.IsDir() {
 			return os.MkdirAll(destination, info.Mode().Perm())
 		}
-
 		if info.Mode()&os.ModeSymlink != 0 {
 			return copySymlink(path, destination)
 		}
@@ -299,7 +285,6 @@ func mergeDirectory(source string, target string) error {
 	})
 }
 
-// copyFile replaces one file with the canonical source contents.
 func copyFile(source string, target string) error {
 	info, err := os.Stat(source)
 	if err != nil {
@@ -329,7 +314,6 @@ func copyFile(source string, target string) error {
 	return closeErr
 }
 
-// copySymlink replaces one symbolic link while preserving its link target.
 func copySymlink(source string, target string) error {
 	link, err := os.Readlink(source)
 	if err != nil {
@@ -339,7 +323,6 @@ func copySymlink(source string, target string) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 		return err
 	}
-
 	if err := os.RemoveAll(target); err != nil {
 		return err
 	}

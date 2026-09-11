@@ -63,8 +63,12 @@ func Warning(Parms structures.Parms, format string, args ...any) {
 
 func Error(rc int, Parms structures.Parms, format string, args ...any) {
 	writeMessage(Parms, os.Stderr, visibilityNormal, levelError, false, format, args...)
-	if rc == RC.OK { return }
-	if Parms.LogFile != nil { _ = Parms.LogFile.Close() }
+	if rc == RC.OK {
+		return
+	}
+	if Parms.LogFile != nil {
+		_ = Parms.LogFile.Close()
+	}
 	os.Exit(rc)
 }
 
@@ -73,16 +77,22 @@ func writeMessage(Parms structures.Parms, writer io.Writer, visibility messageVi
 	message := fmt.Sprintf(format, args...)
 	writeLog(Parms, fmt.Sprintf("%s - %s\n", now.Format("15:04:05"), message))
 
-	if !messageVisible(Parms, visibility) { return }
+	if !messageVisible(Parms, visibility) {
+		return
+	}
 
 	style := messageColor(level)
-	if bold { style = colorBold + style }
+	if bold {
+		style = colorBold + style
+	}
 
 	fmt.Fprintf(writer, "%s - %s%s%s\n", now.Format("15:04:05"), style, message, colorReset)
 }
 
 func writeLog(Parms structures.Parms, message string) {
-	if Parms.LogFile == nil { return }
+	if Parms.LogFile == nil {
+		return
+	}
 	fmt.Fprint(Parms.LogFile, message)
 }
 
@@ -92,11 +102,17 @@ func messageVisible(Parms structures.Parms, visibility messageVisibility) bool {
 
 func messageColor(level messageLevel) string {
 	switch level {
-	case levelVerbose: return colorBlue
-	case levelInfo:    return colorWhite
-	case levelSuccess: return colorGreen
-	case levelWarning: return colorYellow
-	case levelError:   return colorRed
-	default:           return colorReset
+	case levelVerbose:
+		return colorBlue
+	case levelInfo:
+		return colorWhite
+	case levelSuccess:
+		return colorGreen
+	case levelWarning:
+		return colorYellow
+	case levelError:
+		return colorRed
+	default:
+		return colorReset
 	}
 }

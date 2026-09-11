@@ -12,29 +12,46 @@ import (
 )
 
 func main() {
-	if len(os.Args) == 1 { printHelp() }
+	if len(os.Args) == 1 {
+		printHelp()
+	}
 
 	command := os.Args[1]
 	Parms := args.Parse(command, os.Args[2:])
 	commands.SetDebug(Parms.Debug)
 
-	if command == "help" { Parms.Help = true }
-	if Parms.Help { printHelp() }
+	if command == "help" {
+		Parms.Help = true
+	}
+	if Parms.Help {
+		printHelp()
+	}
 
-	if Parms.Message == "" { Parms.Message = command }
+	if Parms.Message == "" {
+		Parms.Message = command
+	}
 
 	logFile, err := createLogFile(command)
-	if err != nil { cli.Error(RC.Error, Parms, "No se pudo crear el log: %v", err) }
+	if err != nil {
+		cli.Error(RC.Error, Parms, "No se pudo crear el log: %v", err)
+	}
 	Parms.LogFile = logFile
 	defer Parms.LogFile.Close()
 
 	switch command {
-	case "build":    runners.Build(&Parms)
-	case "publish":  runners.Publish(&Parms)
-	case "commit":   runners.Commit(Parms)
-	case "release":  runners.Release(&Parms)
-	case "workflow": runners.Workflow(&Parms)
-	case "sync":     runners.Sync(Parms)
-	default:         cli.Error(RC.InvalidArguments, Parms, "Comando desconocido: %q", command)
+	case "build":
+		runners.Build(&Parms)
+	case "publish":
+		runners.Publish(&Parms)
+	case "commit":
+		runners.Commit(Parms)
+	case "release":
+		runners.Release(&Parms)
+	case "workflow":
+		runners.Workflow(&Parms)
+	case "sync":
+		runners.Sync(Parms)
+	default:
+		cli.Error(RC.InvalidArguments, Parms, "Comando desconocido: %q", command)
 	}
 }

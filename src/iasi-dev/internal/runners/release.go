@@ -7,41 +7,40 @@ import (
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/commands"
 	"iasi-dev/internal/consts/RC"
-	iasiPkg "iasi-dev/internal/iasi"
 	"iasi-dev/internal/structures"
 )
 
-// Release releases the selected IASI projects and returns the projects that remain active.
+// Release delegates release to iasi.quarto once per selected Git repository.
 func Release(Parms *structures.Parms) []string {
-	if Parms.Debug { fmt.Printf("Release: projects=%v\n", Parms.Projects) }
+	if Parms.Debug {
+		fmt.Printf("Release: repos=%v\n", Parms.Repos)
+	}
 	targets := []string{}
-	rc := RC.OK
 
-	for _, project := range Parms.Projects {
-		cli.Info(*Parms, "Generando release de %s", filepath.Base(project))
-
-		_, ok := iasiPkg.Read(project, *Parms)
-		if !ok {
-			rc = checkTolerant(*Parms, RC.Release)
-		} else {
-			rc = releaseQuarto(project, *Parms)
+	for _, repository := range Parms.Repos {
+		if isBlackListed(*Parms, repository) {
+			continue
 		}
+		cli.Info(*Parms, "Generando release de %s", filepath.Base(repository))
 
+		rc := releaseRepository(repository, *Parms)
 		if rc == RC.Skip {
-			addToBlackList(Parms, project)
+			addToBlackList(Parms, repository)
 			continue
 		}
 
-		targets = append(targets, project)
+		targets = append(targets, repository)
 	}
 
 	return targets
 }
 
-// releaseQuarto releases an IASI project through iasi.quarto.
-func releaseQuarto(project string, Parms structures.Parms) int {
-	result := commands.RunFriendlyLogged(project, Parms.LogFile, "Rscript", "-e", "iasi.quarto::release()")
-	if RC.IsErroneous(result.RC) { return checkTolerant(Parms, RC.Release) }
+// releaseRepository delegates project discovery, applicability and release semantics to iasi.quarto.
+func releaseRepository(repository string, Parms structures.Parms) int {
+	result := commands.RunFriendlyLogged(repository, Parms.LogFile, "Rscript", "-e", "iasi.quarto::release()")
+	if RC.IsErroneous(result.RC) {
+		return checkTolerant(Parms, RC.Release)
+	}
 
 	return RC.OK
 }

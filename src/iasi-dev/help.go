@@ -9,7 +9,9 @@ import (
 
 func printHelp(rc ...int) {
 	exitCode := RC.OK
-	if len(rc) > 0 { exitCode = rc[0] }
+	if len(rc) > 0 {
+		exitCode = rc[0]
+	}
 
 	cli.Direct(`IASI Dev
 
@@ -19,11 +21,11 @@ Usage:
 
 Commands:
   help       Show help
-  build      Build
-  publish    Publish
-  release    Release
+  build      Build through iasi.quarto
+  publish    Publish through iasi.quarto
+  release    Release through iasi.quarto
   commit     Commit
-  workflow   Run a workflow
+  workflow   Run a workflow repository by repository
   sync       Sync shared files from iasi-common
 
 Options:
@@ -31,17 +33,17 @@ Options:
   -s         Silent output.
   -v         Verbose output.
   -V         Very verbose output.
-  -a         Execute previous stages too.
+  -a         Execute previous workflow stages too.
   -c         Use intermediate workflows as checkpoints.
   -d         Show debug messages.
-  -f         Force the operation.
+  -f         Force the operation when supported.
   -i         Install the artifact when applicable.
   -l         Commit locally without push.
   -t         Continue when an operation fails.
 
 Parameters:
   --exclude value[,value]*  Add exclusions. Existing files are read one exclusion per line; .git and tests are always excluded.
-  --format value            Output format.
+  --format value            Output format passed to build.
   --message value           Commit message.
 `)
 

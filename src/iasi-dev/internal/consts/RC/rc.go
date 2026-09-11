@@ -2,8 +2,8 @@
 package RC
 
 const (
-	OK               =  0
-	InvalidArguments =  2
+	OK               = 0
+	InvalidArguments = 2
 	Build            = 10
 	Publish          = 20
 	Commit           = 30
@@ -17,7 +17,7 @@ const (
 	Severe = 32
 	Fatal  = 64
 
-	Skip = 256	
+	Skip = 256
 )
 
 func IsErroneous(rc int) bool {
