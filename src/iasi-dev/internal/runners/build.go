@@ -26,7 +26,7 @@ func Build(Parms *structures.Parms) []string {
 		cli.Info(*Parms, "Construyendo %s", filepath.Base(repository))
 
 		rc := buildRepository(repository, *Parms)
-		if rc == RC.Skip {
+		if handleRC(Parms, rc) == RC.Skip {
 			addToBlackList(Parms, repository)
 			continue
 		}
@@ -49,11 +49,9 @@ func buildRepository(repository string, Parms structures.Parms) int {
 		parameters = append(parameters, "format = c("+strings.Join(formats, ", ")+")")
 	}
 
-	expression := "iasi.quarto::build(" + strings.Join(parameters, ", ") + ")"
-	result := commands.RunFriendlyLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
-	if RC.IsErroneous(result.RC) {
-		return checkTolerant(Parms, RC.Build)
-	}
+	call := "iasi.quarto::build(" + strings.Join(parameters, ", ") + ")"
+	expression := "rc = " + call + "; quit(status = as.integer(rc), save = \"no\")"
 
-	return RC.OK
+	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	return result.RC
 }

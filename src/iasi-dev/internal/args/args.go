@@ -19,7 +19,8 @@ func Parse(command string, values []string) structures.Parms {
 
 	if command == "workflow" {
 		if len(values) == 0 {
-			cli.Error(RC.InvalidArguments, structures.Parms{}, "Falta el comando del workflow.")
+			rc := RC.OK
+			cli.Error(RC.Error, structures.Parms{RC: &rc}, "Falta el comando del workflow.")
 		}
 
 		subcommand = values[0]
@@ -35,8 +36,10 @@ func Parse(command string, values []string) structures.Parms {
 }
 
 func parseArguments(args []string) structures.Parms {
+	rc := RC.OK
 	Parms := structures.Parms{
 		Verbose:    1,
+		RC:         &rc,
 		Exclusions: append([]string{}, consts.RequiredExclusions...),
 	}
 
@@ -133,11 +136,11 @@ func validateParameter(Parms *structures.Parms, name string, value string) {
 }
 
 func invalidArgument(Parms *structures.Parms, argument string) {
-	cli.Error(RC.InvalidArguments, *Parms, "Argumento no válido: %q", argument)
+	cli.Error(RC.Error, *Parms, "Argumento no válido: %q", argument)
 }
 
 func missingParameterValue(Parms *structures.Parms, parameter string) {
-	cli.Error(RC.InvalidArguments, *Parms, "Falta el valor del parámetro: %q", parameter)
+	cli.Error(RC.Error, *Parms, "Falta el valor del parámetro: %q", parameter)
 }
 
 // Prepare discovers the effective Git repositories.
@@ -166,7 +169,7 @@ func processExclusions(Parms *structures.Parms, values string) {
 func addExclusionsFile(Parms *structures.Parms, path string) {
 	file, err := os.Open(path)
 	if err != nil {
-		cli.Error(RC.InvalidArguments, *Parms, "No se puede leer el fichero de exclusiones: %q", path)
+		cli.Error(RC.Error, *Parms, "No se puede leer el fichero de exclusiones: %q", path)
 	}
 	defer file.Close()
 
@@ -180,7 +183,7 @@ func addExclusionsFile(Parms *structures.Parms, path string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		cli.Error(RC.InvalidArguments, *Parms, "Error leyendo el fichero de exclusiones: %q", path)
+		cli.Error(RC.Error, *Parms, "Error leyendo el fichero de exclusiones: %q", path)
 	}
 }
 

@@ -12,8 +12,26 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() (exitCode int) {
+	exitCode = RC.OK
+
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			switch stop := recovered.(type) {
+			case RC.Stop:
+				exitCode = stop.Code
+			default:
+				panic(recovered)
+			}
+		}
+	}()
+
 	if len(os.Args) == 1 {
 		printHelp()
+		return RC.NothingToDo
 	}
 
 	command := os.Args[1]
@@ -25,6 +43,8 @@ func main() {
 	}
 	if Parms.Help {
 		printHelp()
+		RC.Add(Parms.RC, RC.NothingToDo)
+		return RC.Value(Parms.RC)
 	}
 
 	if Parms.Message == "" {
@@ -44,14 +64,16 @@ func main() {
 	case "publish":
 		runners.Publish(&Parms)
 	case "commit":
-		runners.Commit(Parms)
+		runners.Commit(&Parms)
 	case "release":
 		runners.Release(&Parms)
 	case "workflow":
 		runners.Workflow(&Parms)
 	case "sync":
-		runners.Sync(Parms)
+		runners.Sync(&Parms)
 	default:
-		cli.Error(RC.InvalidArguments, Parms, "Comando desconocido: %q", command)
+		cli.Error(RC.Error, Parms, "Comando desconocido: %q", command)
 	}
+
+	return RC.Value(Parms.RC)
 }

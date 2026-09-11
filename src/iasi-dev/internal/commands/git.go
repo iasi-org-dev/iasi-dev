@@ -46,7 +46,7 @@ func commandGitStatus(directory string, logFile *os.File, args ...string) struct
 	result := command(directory, true, logFile, "git", "status", "--porcelain")
 
 	if result.RC != RC.OK {
-		result.RC = RC.Error
+		result.RC = RC.Fatal
 		return result
 	}
 

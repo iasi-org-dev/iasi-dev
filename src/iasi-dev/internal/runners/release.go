@@ -24,7 +24,7 @@ func Release(Parms *structures.Parms) []string {
 		cli.Info(*Parms, "Generando release de %s", filepath.Base(repository))
 
 		rc := releaseRepository(repository, *Parms)
-		if rc == RC.Skip {
+		if handleRC(Parms, rc) == RC.Skip {
 			addToBlackList(Parms, repository)
 			continue
 		}
@@ -37,10 +37,7 @@ func Release(Parms *structures.Parms) []string {
 
 // releaseRepository delegates project discovery, applicability and release semantics to iasi.quarto.
 func releaseRepository(repository string, Parms structures.Parms) int {
-	result := commands.RunFriendlyLogged(repository, Parms.LogFile, "Rscript", "-e", "iasi.quarto::release()")
-	if RC.IsErroneous(result.RC) {
-		return checkTolerant(Parms, RC.Release)
-	}
-
-	return RC.OK
+	expression := "rc = iasi.quarto::release(); quit(status = as.integer(rc), save = \"no\")"
+	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	return result.RC
 }

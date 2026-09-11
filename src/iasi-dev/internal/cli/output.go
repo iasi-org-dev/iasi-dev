@@ -61,15 +61,12 @@ func Warning(Parms structures.Parms, format string, args ...any) {
 	writeMessage(Parms, os.Stderr, visibilityNormal, levelWarning, false, format, args...)
 }
 
+// Error records the supplied RC bits, prints the message and aborts the current execution.
+// main owns the final os.Exit().
 func Error(rc int, Parms structures.Parms, format string, args ...any) {
 	writeMessage(Parms, os.Stderr, visibilityNormal, levelError, false, format, args...)
-	if rc == RC.OK {
-		return
-	}
-	if Parms.LogFile != nil {
-		_ = Parms.LogFile.Close()
-	}
-	os.Exit(rc)
+	code := RC.Add(Parms.RC, rc)
+	panic(RC.Stop{Code: code})
 }
 
 func writeMessage(Parms structures.Parms, writer io.Writer, visibility messageVisibility, level messageLevel, bold bool, format string, args ...any) {

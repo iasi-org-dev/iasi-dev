@@ -13,15 +13,15 @@ import (
 )
 
 // Sync propagates entries from iasi-common to copies that already exist in the workspace.
-func Sync(Parms structures.Parms) {
+func Sync(Parms *structures.Parms) {
 	entries := Parms.RequestedTargets
 	if len(entries) == 0 {
-		cli.Error(RC.InvalidArguments, Parms, "Debes indicar al menos un archivo o directorio.")
+		cli.Error(RC.Error, *Parms, "Debes indicar al menos un archivo o directorio.")
 	}
 
 	workspace, err := os.Getwd()
 	if err != nil {
-		cli.Error(RC.Sync, Parms, "No se pudo resolver el workspace: %v", err)
+		cli.Error(RC.Error, *Parms, "No se pudo resolver el workspace: %v", err)
 	}
 
 	common := os.Getenv("IASI_COMMON_DIR")
@@ -34,26 +34,26 @@ func Sync(Parms structures.Parms) {
 
 	info, err := os.Stat(common)
 	if err != nil || !info.IsDir() {
-		cli.Error(RC.Sync, Parms, "No se encontró iasi-common: %s", common)
+		cli.Error(RC.Error, *Parms, "No se encontró iasi-common: %s", common)
 	}
 
 	synced := 0
 	for _, entry := range entries {
-		count, err := syncEntry(workspace, common, entry, Parms)
+		count, err := syncEntry(workspace, common, entry, *Parms)
 		if err == nil {
 			synced += count
 			continue
 		}
 
 		if Parms.Tolerant {
-			cli.Warning(Parms, "%v", err)
+			cli.Warning(*Parms, "%v", err)
 			continue
 		}
 
-		cli.Error(RC.Sync, Parms, "%v", err)
+		cli.Error(RC.Error, *Parms, "%v", err)
 	}
 
-	cli.Success(Parms, "%d copia(s) sincronizada(s) desde iasi-common.", synced)
+	cli.Success(*Parms, "%d copia(s) sincronizada(s) desde iasi-common.", synced)
 }
 
 func syncEntry(workspace string, common string, entry string, Parms structures.Parms) (int, error) {

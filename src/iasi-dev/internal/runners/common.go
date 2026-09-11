@@ -9,17 +9,32 @@ import (
 	"iasi-dev/internal/structures"
 )
 
-// checkTolerant stops the execution when tolerance is disabled or skips the current item.
-func checkTolerant(Parms structures.Parms, rc int) int {
+// handleRC accumulates one result and applies the common error policy.
+func handleRC(Parms *structures.Parms, rc int) int {
 	if Parms.Debug {
-		fmt.Printf("checkTolerant: tolerant=%t rc=%d\n", Parms.Tolerant, rc)
+		fmt.Printf("handleRC: tolerant=%t rc=0x%02X\n", Parms.Tolerant, rc)
 	}
+
+	RC.Add(Parms.RC, rc)
+
+	if !RC.IsErroneous(rc) {
+		return rc
+	}
+
 	if Parms.Tolerant {
 		return RC.Skip
 	}
 
-	cli.Error(rc, Parms, "La operación ha fallado.")
+	cli.Error(RC.OK, *Parms, "La operación ha fallado con RC 0x%02X. Revisa el log: %s", rc, logName(*Parms))
 	return RC.Skip
+}
+
+// logName returns the current log path when available.
+func logName(Parms structures.Parms) string {
+	if Parms.LogFile == nil {
+		return "(sin log)"
+	}
+	return Parms.LogFile.Name()
 }
 
 // addToBlackList blacklists repository.

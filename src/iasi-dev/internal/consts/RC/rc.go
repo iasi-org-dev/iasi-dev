@@ -1,25 +1,47 @@
-// Package RC contains the process return codes used by iasi-dev.
+// Package RC contains the cumulative return-code bitmask used by iasi-dev.
 package RC
 
 const (
-	OK               = 0
-	InvalidArguments = 2
-	Build            = 10
-	Publish          = 20
-	Commit           = 30
-	Release          = 40
-	Sync             = 60
+	OK          = 0x00
+	NothingToDo = 0x01
+	Info        = 0x02
+	Warning     = 0x04
+	Attention   = 0x08
 
-	NothingToDo = 2
-	Warning     = 4
+	Error    = 0x10
+	Severe   = 0x20
+	Fatal    = 0x40
+	Reserved = 0x80
 
-	Error  = 16
-	Severe = 32
-	Fatal  = 64
+	NoticeMask = 0x0F
+	ErrorMask  = 0xF0
 
-	Skip = 256
+	// Internal workflow marker. It is never exposed as the process exit code.
+	Skip = 0x100
 )
 
+// Stop is used internally to unwind execution while preserving the accumulated RC.
+type Stop struct {
+	Code int
+}
+
 func IsErroneous(rc int) bool {
-	return rc&0xF0 != 0
+	return rc&ErrorMask != 0
+}
+
+func Add(current *int, rc int) int {
+	if current == nil {
+		return rc
+	}
+
+	*current |= rc
+	return *current
+}
+
+func Value(current *int) int {
+	if current == nil {
+		return OK
+	}
+
+	return *current
 }

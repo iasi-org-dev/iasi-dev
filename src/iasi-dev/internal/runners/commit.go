@@ -11,60 +11,59 @@ import (
 )
 
 // Commit commits the selected repositories and returns the targets that remain active.
-func Commit(Parms structures.Parms) []string {
+func Commit(Parms *structures.Parms) []string {
 	if Parms.Debug {
 		fmt.Printf("Commit: repos=%v blackList=%v\n", Parms.Repos, Parms.BlackList)
 	}
 	targets := []string{}
 
 	for _, repository := range Parms.Repos {
-		if isBlackListed(Parms, repository) {
+		if isBlackListed(*Parms, repository) {
 			continue
 		}
 
-		cli.Info(Parms, "Commit %s", filepath.Base(repository))
+		cli.Info(*Parms, "Commit %s", filepath.Base(repository))
 
 		rc := commitRepository(repository, Parms)
 		switch rc {
-		case RC.OK:
+		case RC.OK, RC.NothingToDo:
 			targets = append(targets, repository)
 		case RC.Skip:
-		case RC.Error:
-			cli.Error(RC.Commit, Parms, "Error en commit de %s.", filepath.Base(repository))
 		default:
-			cli.Error(RC.Commit, Parms, "Resultado inesperado en commit de %s: rc=%d.", filepath.Base(repository), rc)
+			cli.Error(RC.Error, *Parms, "Resultado inesperado en commit de %s: rc=0x%02X.", filepath.Base(repository), rc)
 		}
 	}
 
 	return targets
 }
 
-func commitRepository(repository string, Parms structures.Parms) int {
+func commitRepository(repository string, Parms *structures.Parms) int {
 	if Parms.Debug {
 		fmt.Printf("commitRepository: repository=%s tolerant=%t local=%t\n", repository, Parms.Tolerant, Parms.Local)
 	}
-	rc := changesPending(repository, Parms)
-	if RC.IsErroneous(rc) {
-		return checkTolerant(Parms, RC.Commit)
-	}
+
+	rc := changesPending(repository, *Parms)
 	if rc == RC.NothingToDo {
-		return RC.OK
+		return rc
+	}
+	if handleRC(Parms, rc) == RC.Skip {
+		return RC.Skip
 	}
 
-	rc = addChanges(repository, Parms)
-	if RC.IsErroneous(rc) {
-		return checkTolerant(Parms, RC.Commit)
+	rc = addChanges(repository, *Parms)
+	if handleRC(Parms, rc) == RC.Skip {
+		return RC.Skip
 	}
 
-	rc = commitChanges(repository, Parms)
-	if RC.IsErroneous(rc) {
-		return checkTolerant(Parms, RC.Commit)
+	rc = commitChanges(repository, *Parms)
+	if handleRC(Parms, rc) == RC.Skip {
+		return RC.Skip
 	}
 
 	if !Parms.Local {
-		rc = pushChanges(repository, Parms)
-		if RC.IsErroneous(rc) {
-			return checkTolerant(Parms, RC.Commit)
+		rc = pushChanges(repository, *Parms)
+		if handleRC(Parms, rc) == RC.Skip {
+			return RC.Skip
 		}
 	}
 
@@ -85,7 +84,7 @@ func addChanges(repository string, Parms structures.Parms) int {
 	}
 	result := commands.RunLogged(repository, Parms.LogFile, "git", "add", "-A", ".")
 	if result.RC != RC.OK {
-		return RC.Error
+		return RC.Fatal
 	}
 	return RC.OK
 }
@@ -96,7 +95,7 @@ func commitChanges(repository string, Parms structures.Parms) int {
 	}
 	result := commands.RunLogged(repository, Parms.LogFile, "git", "commit", "-m", Parms.Message)
 	if result.RC != RC.OK {
-		return RC.Error
+		return RC.Fatal
 	}
 	return RC.OK
 }
@@ -107,7 +106,7 @@ func pushChanges(repository string, Parms structures.Parms) int {
 	}
 	result := commands.RunLogged(repository, Parms.LogFile, "git", "push")
 	if result.RC != RC.OK {
-		return RC.Error
+		return RC.Fatal
 	}
 	return RC.OK
 }

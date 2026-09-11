@@ -25,7 +25,7 @@ func Publish(Parms *structures.Parms) []string {
 		cli.Info(*Parms, "Publicando %s", filepath.Base(repository))
 
 		rc := publishRepository(repository, *Parms)
-		if rc == RC.Skip {
+		if handleRC(Parms, rc) == RC.Skip {
 			addToBlackList(Parms, repository)
 			continue
 		}
@@ -43,11 +43,9 @@ func publishRepository(repository string, Parms structures.Parms) int {
 		parameters = append(parameters, "force = TRUE")
 	}
 
-	expression := "iasi.quarto::publish(" + strings.Join(parameters, ", ") + ")"
-	result := commands.RunFriendlyLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
-	if RC.IsErroneous(result.RC) {
-		return checkTolerant(Parms, RC.Publish)
-	}
+	call := "iasi.quarto::publish(" + strings.Join(parameters, ", ") + ")"
+	expression := "rc = " + call + "; quit(status = as.integer(rc), save = \"no\")"
 
-	return RC.OK
+	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	return result.RC
 }

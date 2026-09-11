@@ -16,6 +16,7 @@ type Parms struct {
 	Format           string   // Formato o formatos de salida.
 	Subcommand       string   // Subcomando cuando command es workflow.
 	LogFile          *os.File // Handle al fichero de log de la ejecución.
+	RC               *int     // Código de retorno acumulativo compartido.
 	Targets          []string // Raíces efectivas desde las que se descubren repositorios.
 	RequestedTargets []string // Objetivos solicitados por el usuario.
 	Exclusions       []string // Nombres excluidos durante el descubrimiento.

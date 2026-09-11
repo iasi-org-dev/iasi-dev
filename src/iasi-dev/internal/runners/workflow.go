@@ -21,7 +21,7 @@ func Workflow(Parms *structures.Parms) {
 		case "release":
 			workflowRelease(true, Parms)
 		default:
-			cli.Error(RC.InvalidArguments, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
+			cli.Error(RC.Error, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
 		}
 	}
 }
@@ -30,7 +30,7 @@ func Workflow(Parms *structures.Parms) {
 func workflowBuild(standalone bool, Parms *structures.Parms) {
 	Parms.Repos = Build(Parms)
 	if standalone || Parms.Checkpoints {
-		Parms.Repos = Commit(*Parms)
+		Parms.Repos = Commit(Parms)
 	}
 }
 
@@ -45,7 +45,7 @@ func workflowPublish(standalone bool, Parms *structures.Parms) {
 
 	Parms.Repos = Publish(Parms)
 	if standalone || Parms.Checkpoints {
-		Parms.Repos = Commit(*Parms)
+		Parms.Repos = Commit(Parms)
 	}
 }
 
@@ -60,6 +60,6 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 
 	Parms.Repos = Release(Parms)
 	if standalone || Parms.Checkpoints {
-		Parms.Repos = Commit(*Parms)
+		Parms.Repos = Commit(Parms)
 	}
 }
