@@ -3,7 +3,6 @@ package runners
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/commands"
@@ -41,13 +40,7 @@ func Release(Parms *structures.Parms) []string {
 
 // releaseQuarto releases an IASI project through iasi.quarto.
 func releaseQuarto(project string, Parms structures.Parms) int {
-	parameters := []string{}
-
-	if Parms.Force { parameters = append(parameters, "force = TRUE") }
-
-	expression := "iasi.quarto::release(" + strings.Join(parameters, ", ") + ")"
-
-	result := commands.RunFriendlyLogged(project, Parms.LogFile, "Rscript", "-e", expression)
+	result := commands.RunFriendlyLogged(project, Parms.LogFile, "Rscript", "-e", "iasi.quarto::release()")
 	if RC.IsErroneous(result.RC) { return checkTolerant(Parms, RC.Release) }
 
 	return RC.OK
