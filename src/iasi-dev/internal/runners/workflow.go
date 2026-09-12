@@ -23,6 +23,8 @@ func Workflow(Parms *structures.Parms) {
 			workflowPublish(true, Parms)
 		case "release":
 			workflowRelease(true, Parms)
+		case "promote":
+			workflowPromote(true, Parms)
 		default:
 			cli.Error(RC.Error, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
 		}
@@ -72,6 +74,20 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 	}
 }
 
+// workflowPromote promotes locally and will later publish the resulting iasi-org.
+func workflowPromote(standalone bool, Parms *structures.Parms) {
+	Parms.Repos = Promote(Parms)
+	if len(Parms.Repos) == 0 {
+		return
+	}
+
+	// TODO: add the atomic operation that publishes the local iasi-org to GitHub.
+	// TODO: compose that operation here after Promote succeeds.
+	if standalone {
+		cli.Step(*Parms, "Publishing promoted organization pending")
+	}
+}
+
 // workflowContinuesAfterBuild reports whether later workflow stages apply.
 // NothingToDo means build succeeded but found no buildable IASI project.
 func workflowContinuesAfterBuild(rc int) bool {
@@ -87,6 +103,8 @@ func workflowName(name string) string {
 		return "Publishing"
 	case "release":
 		return "Releasing"
+	case "promote":
+		return "Promoting"
 	default:
 		return name
 	}

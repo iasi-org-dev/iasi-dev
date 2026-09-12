@@ -14,6 +14,10 @@ type Parms struct {
 	Tolerant         bool     // Continúa cuando una operación falla.
 	Message          string   // Mensaje utilizado para el commit.
 	Format           string   // Formato o formatos de salida.
+	Path             string   // Directorio de trabajo solicitado con --path.
+	Organization     string   // Organización GitHub explícita o deducida del workspace.
+	Version          string   // Versión actual de la organización leída de GitHub.
+	TargetVersion    string   // Versión solicitada por promote o restore.
 	Subcommand       string   // Subcomando cuando command es workflow.
 	LogFile          *os.File // Handle al fichero de log de la ejecución.
 	RC               *int     // Código de retorno acumulativo compartido.

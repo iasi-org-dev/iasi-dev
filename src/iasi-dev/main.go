@@ -41,14 +41,10 @@ func run() (exitCode int) {
 	Parms := args.Parse(command, os.Args[2:])
 	veryVerbose = Parms.Verbose == 7
 	commands.SetDebug(Parms.Debug)
+	preparePath(&Parms)
 
 	if command == "help" {
 		Parms.Help = true
-	}
-	if Parms.Help {
-		printHelp()
-		RC.Add(Parms.RC, RC.NothingToDo)
-		return RC.Value(Parms.RC)
 	}
 
 	if Parms.Message == "" {
@@ -61,6 +57,14 @@ func run() (exitCode int) {
 	}
 	Parms.LogFile = logFile
 	defer Parms.LogFile.Close()
+
+	prepareParms(&Parms)
+
+	if Parms.Help {
+		printHelp()
+		RC.Add(Parms.RC, RC.NothingToDo)
+		return RC.Value(Parms.RC)
+	}
 
 	switch command {
 	case "build":
@@ -75,6 +79,12 @@ func run() (exitCode int) {
 		runners.Workflow(&Parms)
 	case "sync":
 		runners.Sync(&Parms)
+	case "version":
+		runners.Version(&Parms)
+	case "promote":
+		runners.Promote(&Parms)
+	case "restore":
+		runners.Restore(&Parms)
 	default:
 		cli.Error(RC.Error, Parms, "Comando desconocido: %q", command)
 	}

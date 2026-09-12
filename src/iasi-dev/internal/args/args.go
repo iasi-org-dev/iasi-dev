@@ -13,7 +13,7 @@ import (
 	"iasi-dev/internal/tools"
 )
 
-// Parse parses command-line arguments and prepares the effective targets.
+// Parse parses command-line arguments. Preparation is performed later by main.
 func Parse(command string, values []string) structures.Parms {
 	subcommand := ""
 
@@ -28,11 +28,36 @@ func Parse(command string, values []string) structures.Parms {
 	}
 
 	Parms := parseArguments(values)
-	Parms.RequestedTargets = append([]string{}, Parms.Targets...)
 	Parms.Subcommand = subcommand
-	Prepare(&Parms)
+	extractTargetVersion(command, &Parms)
+	extractVersionOrganization(command, &Parms)
+	Parms.RequestedTargets = append([]string{}, Parms.Targets...)
 
 	return Parms
+}
+
+// extractTargetVersion separates organization version operands from filesystem targets.
+func extractTargetVersion(command string, Parms *structures.Parms) {
+	requiresVersion := command == "promote" || command == "restore" || (command == "workflow" && Parms.Subcommand == "promote")
+	if !requiresVersion || len(Parms.Targets) == 0 {
+		return
+	}
+
+	Parms.TargetVersion = Parms.Targets[0]
+	Parms.Targets = Parms.Targets[1:]
+}
+
+// extractVersionOrganization separates the optional organization operand from filesystem targets.
+func extractVersionOrganization(command string, Parms *structures.Parms) {
+	if command != "version" || len(Parms.Targets) == 0 {
+		return
+	}
+	if len(Parms.Targets) > 1 {
+		cli.Error(RC.Error, *Parms, "version acepta como máximo una organización.")
+	}
+
+	Parms.Organization = Parms.Targets[0]
+	Parms.Targets = nil
 }
 
 func parseArguments(args []string) structures.Parms {
@@ -130,6 +155,8 @@ func validateParameter(Parms *structures.Parms, name string, value string) {
 		Parms.Format = value
 	case "message":
 		Parms.Message = value
+	case "path":
+		Parms.Path = value
 	default:
 		invalidArgument(Parms, "--"+name)
 	}

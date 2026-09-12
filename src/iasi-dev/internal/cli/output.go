@@ -33,11 +33,11 @@ const (
 	colorReset  = "\033[0m"
 	colorBold   = "\033[1m"
 	colorBlue   = "\033[34m"
-	colorGray   = "\033[90m"
+	colorCyan   = "\033[36m"
 	colorWhite  = "\033[37m"
 	colorGreen  = "\033[32m"
 	colorYellow = "\033[33m"
-	colorRed    = "\033[31m"
+	colorRed    = "\033[91m"
 )
 
 func Direct(format string, args ...any) {
@@ -90,10 +90,20 @@ func Warning(Parms structures.Parms, format string, args ...any) {
 	writeMessage(Parms, os.Stderr, visibilityNormal, levelWarning, false, format, args...)
 }
 
-// Error records the supplied RC bits, prints the message and aborts the current execution.
+// ErrorMessage writes a non-terminal error message.
+func ErrorMessage(Parms structures.Parms, format string, args ...any) {
+	writeMessage(Parms, os.Stderr, visibilityNormal, levelError, true, format, args...)
+}
+
+// Error writes an error message and aborts execution.
 // main owns the final os.Exit().
 func Error(rc int, Parms structures.Parms, format string, args ...any) {
-	writeMessage(Parms, os.Stderr, visibilityNormal, levelError, true, format, args...)
+	ErrorMessage(Parms, format, args...)
+	Abort(rc, Parms)
+}
+
+// Abort records the supplied RC bits and aborts execution without printing another message.
+func Abort(rc int, Parms structures.Parms) {
 	code := RC.Add(Parms.RC, rc)
 	panic(RC.Stop{Code: code})
 }
@@ -134,7 +144,7 @@ func messageColor(level messageLevel) string {
 	case levelVerbose:
 		return colorBlue
 	case levelHeader:
-		return colorGray
+		return colorCyan
 	case levelInfo:
 		return colorWhite
 	case levelSuccess:

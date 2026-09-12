@@ -25,7 +25,7 @@ func handleRC(Parms *structures.Parms, rc int) int {
 		return RC.Skip
 	}
 
-	cli.Error(RC.OK, *Parms, "La operación ha fallado con RC 0x%02X. Revisa el log: %s", rc, logName(*Parms))
+	cli.ErrorMessage(*Parms, "La operación ha fallado con RC 0x%02X. Revisa el log: %s", rc, logName(*Parms))
 	return RC.Skip
 }
 
