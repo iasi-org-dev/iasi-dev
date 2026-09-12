@@ -8,9 +8,10 @@ func printHelp() {
 	Usage:
 	  iasi-dev <command> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
 	  iasi-dev workflow <build|publish|release> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
-	  iasi-dev workflow promote vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
+	  iasi-dev workflow promote vMAJOR.MINOR.PATCH [-l] [-h] [-s] [-v|-V] [-d] [--path value] [target...]
 	  iasi-dev promote vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
 	  iasi-dev restore [vMAJOR.MINOR.PATCH] [-h] [-s] [-v|-V] [-d] [--path value] [target...]
+	  iasi-dev materialize [-l] <destination> [source] [-h] [-s] [-v|-V] [-d] [--path value]
 	  iasi-dev version [organization] [-h] [-s] [-v|-V] [-d] [--path value]
 	
 	Commands:
@@ -21,6 +22,7 @@ func printHelp() {
 	  commit     Commit
 	  promote    Validate and create a new stable organization version (promotion steps pending)
 	  restore    Restore repositories to a tagged version; without a version, restore main
+	  materialize Materialize an organization into a destination workspace without Git history
 	  workflow   Run a workflow repository by repository
 	  sync       Sync shared files from iasi-common
 	  version    Show VERSION for the explicit or current organization
@@ -29,7 +31,7 @@ func printHelp() {
 	  build      Build and commit
 	  publish    Publish and commit; optionally include previous stages with -a
 	  release    Release and commit; optionally include previous stages with -a
-	  promote    Promote and publish the stable organization to GitHub (implementation pending)
+	  promote    Promote the development organization, materialize the stable organization and push it unless -l
 	
 	Options:
 	  -h         Show help.
@@ -41,7 +43,7 @@ func printHelp() {
 	  -d         Show debug messages.
 	  -f         Force the operation when supported.
 	  -i         Install the artifact when applicable.
-	  -l         Commit locally without push.
+	  -l         Keep the operation local; do not publish to GitHub when supported.
 	  -t         Continue when an operation fails.
 	
 	Parameters:

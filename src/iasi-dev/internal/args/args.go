@@ -31,7 +31,10 @@ func Parse(command string, values []string) structures.Parms {
 	Parms.Subcommand = subcommand
 	extractTargetVersion(command, &Parms)
 	extractVersionOrganization(command, &Parms)
-	Parms.RequestedTargets = append([]string{}, Parms.Targets...)
+	extractMaterializeOperands(command, &Parms)
+	if Parms.RequestedTargets == nil {
+		Parms.RequestedTargets = append([]string{}, Parms.Targets...)
+	}
 
 	return Parms
 }
@@ -57,6 +60,37 @@ func extractVersionOrganization(command string, Parms *structures.Parms) {
 	}
 
 	Parms.Organization = Parms.Targets[0]
+	Parms.Targets = nil
+}
+
+// extractMaterializeOperands separates materialize's destination from the optional source target.
+// The destination is resolved before --path changes the working directory. The optional source
+// remains a normal target and therefore follows the common preparation flow.
+func extractMaterializeOperands(command string, Parms *structures.Parms) {
+	if command != "materialize" {
+		return
+	}
+
+	Parms.RequestedTargets = append([]string{}, Parms.Targets...)
+	if len(Parms.Targets) == 0 {
+		return
+	}
+	if len(Parms.Targets) > 2 {
+		cli.Error(RC.Error, *Parms, "materialize acepta <destino> y, opcionalmente, [origen].")
+	}
+
+	destination, err := filepath.Abs(Parms.Targets[0])
+	if err != nil {
+		cli.Error(RC.Error, *Parms, "No se puede resolver el destino de materialize: %q", Parms.Targets[0])
+	}
+	Parms.MaterializeDestination = filepath.Clean(destination)
+
+	if len(Parms.Targets) == 2 {
+		Parms.Targets = []string{Parms.Targets[1]}
+		return
+	}
+
+	// No explicit source: common preparation will use the current directory.
 	Parms.Targets = nil
 }
 

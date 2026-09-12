@@ -2,14 +2,22 @@ package runners
 
 import (
 	"path/filepath"
+	"strings"
 
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
 )
 
-// Workflow executes the selected workflow one Git repository at a time.
+// Workflow executes repository workflows one repository at a time.
+// Promote is organization-wide and therefore runs once with the complete repository set.
 func Workflow(Parms *structures.Parms) {
+	if Parms.Subcommand == "promote" {
+		cli.Header(*Parms, "%s %s", workflowName(Parms.Subcommand), Parms.Organization)
+		workflowPromote(true, Parms)
+		return
+	}
+
 	repositories := append([]string{}, Parms.Repos...)
 
 	for _, repository := range repositories {
@@ -23,8 +31,6 @@ func Workflow(Parms *structures.Parms) {
 			workflowPublish(true, Parms)
 		case "release":
 			workflowRelease(true, Parms)
-		case "promote":
-			workflowPromote(true, Parms)
 		default:
 			cli.Error(RC.Error, *Parms, "Workflow desconocido: %q", Parms.Subcommand)
 		}
@@ -74,18 +80,67 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 	}
 }
 
-// workflowPromote promotes locally and will later publish the resulting iasi-org.
+// workflowPromote promotes the complete development organization, materializes
+// the resulting state locally as the stable organization and, unless -l is active, pushes it.
 func workflowPromote(standalone bool, Parms *structures.Parms) {
 	Parms.Repos = Promote(Parms)
 	if len(Parms.Repos) == 0 {
 		return
 	}
 
-	// TODO: add the atomic operation that publishes the local iasi-org to GitHub.
-	// TODO: compose that operation here after Promote succeeds.
-	if standalone {
-		cli.Step(*Parms, "Publishing promoted organization pending")
+	destination := workflowPromoteDestination(Parms)
+	cli.Step(*Parms, "Materializing stable organization")
+	Parms.MaterializeDestination = destination
+	Parms.Repos = materializeLocal(Parms)
+	if len(Parms.Repos) == 0 || Parms.Local {
+		return
 	}
+
+	Parms.Repos = push(Parms)
+}
+
+// workflowPromoteDestination returns the sibling stable organization workspace.
+// Example: C:\iasi-org-dev -> C:\iasi-org.
+func workflowPromoteDestination(Parms *structures.Parms) string {
+	stableOrganization := strings.TrimSuffix(Parms.Organization, "-dev")
+	if stableOrganization == Parms.Organization || stableOrganization == "" {
+		cli.Error(RC.Error, *Parms, "No se puede deducir la organización estable desde %q.", Parms.Organization)
+	}
+
+	root := workflowOrganizationRoot(Parms.Repos)
+	if root == "" {
+		cli.Error(RC.Error, *Parms, "No se puede deducir el workspace de la organización.")
+	}
+
+	return filepath.Join(filepath.Dir(root), stableOrganization)
+}
+
+// workflowOrganizationRoot finds the common parent containing the organization's repositories.
+func workflowOrganizationRoot(repositories []string) string {
+	if len(repositories) == 0 {
+		return ""
+	}
+
+	root := filepath.Dir(filepath.Clean(repositories[0]))
+	for _, repository := range repositories[1:] {
+		directory := filepath.Dir(filepath.Clean(repository))
+		for !workflowPathContains(root, directory) {
+			parent := filepath.Dir(root)
+			if parent == root {
+				return ""
+			}
+			root = parent
+		}
+	}
+	return root
+}
+
+func workflowPathContains(parent string, child string) bool {
+	relative, err := filepath.Rel(parent, child)
+	if err != nil {
+		return false
+	}
+	return relative == "." || (relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)))
 }
 
 // workflowContinuesAfterBuild reports whether later workflow stages apply.

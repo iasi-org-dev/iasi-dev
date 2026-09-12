@@ -85,6 +85,8 @@ func run() (exitCode int) {
 		runners.Promote(&Parms)
 	case "restore":
 		runners.Restore(&Parms)
+	case "materialize":
+		runners.Materialize(&Parms)
 	default:
 		cli.Error(RC.Error, Parms, "Comando desconocido: %q", command)
 	}
