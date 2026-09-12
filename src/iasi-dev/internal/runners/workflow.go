@@ -28,7 +28,12 @@ func Workflow(Parms *structures.Parms) {
 
 // workflowBuild builds and commits when standalone or used as a checkpoint.
 func workflowBuild(standalone bool, Parms *structures.Parms) {
+	Parms.LastRC = RC.OK
 	Parms.Repos = Build(Parms)
+	if !workflowContinuesAfterBuild(Parms.LastRC) {
+		Parms.Repos = nil
+		return
+	}
 	if standalone || Parms.Checkpoints {
 		Parms.Repos = Commit(Parms)
 	}
@@ -62,4 +67,10 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 	if standalone || Parms.Checkpoints {
 		Parms.Repos = Commit(Parms)
 	}
+}
+
+// workflowContinuesAfterBuild reports whether later workflow stages apply.
+// NothingToDo means build succeeded but found no buildable IASI project.
+func workflowContinuesAfterBuild(rc int) bool {
+	return RC.Result(rc) != RC.NothingToDo
 }

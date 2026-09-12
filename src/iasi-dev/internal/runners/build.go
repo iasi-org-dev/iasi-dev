@@ -23,14 +23,15 @@ func Build(Parms *structures.Parms) []string {
 		if isBlackListed(*Parms, repository) {
 			continue
 		}
-		cli.Info(*Parms, "Construyendo %s", filepath.Base(repository))
+		cli.Info(*Parms, "Construyendo\t%s", filepath.Base(repository))
 
 		rc := buildRepository(repository, *Parms)
-		if RC.Has(handleRC(Parms, rc), RC.Skip) {
+		Parms.LastRC = rc
+		handled := handleRC(Parms, rc)
+		if RC.Has(handled, RC.Skip) {
 			addToBlackList(Parms, repository)
 			continue
 		}
-
 		targets = append(targets, repository)
 	}
 

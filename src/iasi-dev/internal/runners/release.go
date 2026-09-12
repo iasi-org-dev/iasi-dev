@@ -21,7 +21,7 @@ func Release(Parms *structures.Parms) []string {
 		if isBlackListed(*Parms, repository) {
 			continue
 		}
-		cli.Info(*Parms, "Generando release de %s", filepath.Base(repository))
+		cli.Info(*Parms, "Releasing\t%s", filepath.Base(repository))
 
 		rc := releaseRepository(repository, *Parms)
 		if RC.Has(handleRC(Parms, rc), RC.Skip) {

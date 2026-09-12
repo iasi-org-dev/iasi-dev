@@ -22,7 +22,7 @@ func Commit(Parms *structures.Parms) []string {
 			continue
 		}
 
-		cli.Info(*Parms, "Commit %s", filepath.Base(repository))
+		cli.Info(*Parms, "Commit\t%s", filepath.Base(repository))
 
 		rc := commitRepository(repository, Parms)
 		switch rc {
