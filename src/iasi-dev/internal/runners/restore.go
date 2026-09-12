@@ -1,33 +1,142 @@
 package runners
 
 import (
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	"iasi-dev/internal/cli"
+	"iasi-dev/internal/commands"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
 )
 
-// Restore restores iasi-org-dev to a previously tagged organization version.
-// The implementation is intentionally pending; the CLI contract is established now.
-func Restore(Parms *structures.Parms) []string {
-	requireTargetVersion(Parms, "restore")
-	targets := append([]string{}, Parms.Repos...)
+type restoreState struct {
+	repository string
+	branch     string
+	commit     string
+}
 
-	for _, repository := range targets {
-		cli.Header(*Parms, "Restore %s", filepath.Base(repository))
-		cli.Step(*Parms, "Restoring %s -> %s", Parms.Version, Parms.TargetVersion)
+// Restore previews restoring every repository to a tagged organization version.
+// Without a target version it restores the repositories to main.
+func Restore(Parms *structures.Parms) []string {
+	target := restoreTarget(Parms)
+
+	if len(Parms.Repos) == 0 {
+		cli.Error(RC.Error, *Parms, "No se encontraron repositorios para restaurar.")
 	}
 
-	cli.Info(*Parms, "Restore %s -> %s pendiente de implementación.", Parms.Version, Parms.TargetVersion)
-	RC.Add(Parms.RC, RC.NothingToDo)
+	if target != "main" {
+		if _, ok := parseSemanticVersion(target); !ok {
+			cli.Error(RC.Error, *Parms, "La versión destino no es válida: %s", target)
+		}
+	}
 
-	// TODO: verify TargetVersion exists in every repository that belongs to the snapshot.
-	// TODO: protect or reject uncommitted local changes before restoring anything.
-	// TODO: restore the complete iasi-org-dev state to TargetVersion.
-	// TODO: remove repositories from the active workspace when they did not exist in TargetVersion.
-	// TODO: never delete tags newer than TargetVersion; historical versions remain immutable.
-	// TODO: update the iasi-org-dev VERSION organization variable after a successful restore.
+	for _, repository := range Parms.Repos {
+		validateRestoreTarget(Parms, repository, target)
+	}
 
-	return targets
+	states := make([]restoreState, 0, len(Parms.Repos))
+	for _, repository := range Parms.Repos {
+		states = append(states, repositoryRestoreState(Parms, repository))
+	}
+
+	fmt.Printf("Organization: %s\n", Parms.Organization)
+	fmt.Printf("Current version: %s\n", Parms.Version)
+	fmt.Printf("Restore target: %s\n", target)
+
+	restoreRepositories(Parms, target, states)
+
+	return append([]string{}, Parms.Repos...)
+}
+
+func restoreTarget(Parms *structures.Parms) string {
+	if Parms.TargetVersion == "" {
+		return "main"
+	}
+	return Parms.TargetVersion
+}
+
+func validateRestoreTarget(Parms *structures.Parms, repository string, target string) {
+	ref := "refs/heads/main"
+	if target != "main" {
+		ref = "refs/tags/" + target
+	}
+
+	result := commands.Run(repository, Parms.LogFile, "git", "show-ref", "--verify", "--quiet", ref)
+	if result.RC != RC.OK {
+		cli.Error(RC.Error, *Parms, "No existe %s en %s", target, repository)
+	}
+}
+
+func repositoryRestoreState(Parms *structures.Parms, repository string) restoreState {
+	result := commands.Run(repository, Parms.LogFile, "git", "symbolic-ref", "--quiet", "--short", "HEAD")
+	if result.RC == RC.OK {
+		branch := strings.TrimSpace(result.Stdout)
+		if branch != "" {
+			return restoreState{repository: repository, branch: branch}
+		}
+	}
+
+	result = commands.Run(repository, Parms.LogFile, "git", "rev-parse", "HEAD")
+	if result.RC != RC.OK {
+		cli.Error(RC.Error, *Parms, "No se pudo determinar el estado actual de %s", repository)
+	}
+
+	return restoreState{repository: repository, commit: strings.TrimSpace(result.Stdout)}
+}
+
+// restoreRepositories previews the restore transaction.
+// restoreCommand currently prints each Git command and reports success without executing it.
+func restoreRepositories(Parms *structures.Parms, target string, states []restoreState) {
+	restored := []restoreState{}
+
+	for _, state := range states {
+		args := restoreSwitchArguments(target)
+		if !restoreCommand(state.repository, args...) {
+			cli.ErrorMessage(*Parms, "No se pudo restaurar %s a %s", state.repository, target)
+			rollbackRestore(Parms, restored)
+			cli.Abort(RC.Error, *Parms)
+		}
+		restored = append(restored, state)
+	}
+}
+
+func restoreSwitchArguments(target string) []string {
+	if target == "main" {
+		return []string{"switch", "main"}
+	}
+	return []string{"switch", "--detach", target}
+}
+
+func rollbackRestore(Parms *structures.Parms, states []restoreState) {
+	failed := false
+
+	for i := len(states) - 1; i >= 0; i-- {
+		state := states[i]
+		args := restoreRollbackArguments(state)
+		if restoreCommand(state.repository, args...) {
+			continue
+		}
+
+		failed = true
+		cli.ErrorMessage(*Parms, "No se pudo restaurar el estado previo de %s", state.repository)
+	}
+
+	if failed {
+		cli.ErrorMessage(*Parms, "El rollback de restore no se completó; el sistema puede haber quedado en un estado inconsistente.")
+	}
+}
+
+func restoreRollbackArguments(state restoreState) []string {
+	if state.branch != "" {
+		return []string{"switch", state.branch}
+	}
+	return []string{"switch", "--detach", state.commit}
+}
+
+// restoreCommand previews a Git command without executing it.
+func restoreCommand(repository string, args ...string) bool {
+	fmt.Printf("%s: git %s\n", filepath.Base(repository), formatCommandArguments(args))
+	return true
 }

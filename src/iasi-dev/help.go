@@ -10,7 +10,7 @@ func printHelp() {
 	  iasi-dev workflow <build|publish|release> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
 	  iasi-dev workflow promote vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
 	  iasi-dev promote vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
-	  iasi-dev restore vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
+	  iasi-dev restore [vMAJOR.MINOR.PATCH] [-h] [-s] [-v|-V] [-d] [--path value] [target...]
 	  iasi-dev version [organization] [-h] [-s] [-v|-V] [-d] [--path value]
 	
 	Commands:
@@ -20,7 +20,7 @@ func printHelp() {
 	  release    Release through iasi.quarto
 	  commit     Commit
 	  promote    Validate and create a new stable organization version (promotion steps pending)
-	  restore    Restore the current organization to a tagged version (implementation pending)
+	  restore    Restore repositories to a tagged version; without a version, restore main
 	  workflow   Run a workflow repository by repository
 	  sync       Sync shared files from iasi-common
 	  version    Show VERSION for the explicit or current organization

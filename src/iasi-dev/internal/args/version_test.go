@@ -24,6 +24,17 @@ func TestRestoreExtractsTargetVersion(t *testing.T) {
 	}
 }
 
+func TestRestoreWithoutVersionLeavesTargetVersionEmpty(t *testing.T) {
+	Parms := Parse("restore", nil)
+
+	if Parms.TargetVersion != "" {
+		t.Fatalf("TargetVersion = %q, want empty", Parms.TargetVersion)
+	}
+	if len(Parms.Targets) != 0 {
+		t.Fatalf("Targets = %v, want none", Parms.Targets)
+	}
+}
+
 func TestPromoteWorkflowExtractsTargetVersion(t *testing.T) {
 	Parms := Parse("workflow", []string{"promote", "v0.7.0", "iasi-quarto"})
 
