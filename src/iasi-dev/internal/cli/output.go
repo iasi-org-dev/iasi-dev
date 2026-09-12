@@ -15,6 +15,7 @@ type messageVisibility int
 
 const (
 	levelVerbose messageLevel = iota
+	levelHeader
 	levelInfo
 	levelSuccess
 	levelWarning
@@ -31,6 +32,7 @@ const (
 	colorReset  = "\033[0m"
 	colorBold   = "\033[1m"
 	colorBlue   = "\033[34m"
+	colorGray   = "\033[90m"
 	colorWhite  = "\033[37m"
 	colorGreen  = "\033[32m"
 	colorYellow = "\033[33m"
@@ -50,7 +52,23 @@ func VeryVerbose(Parms structures.Parms, format string, args ...any) {
 }
 
 func Info(Parms structures.Parms, format string, args ...any) {
-	writeMessage(Parms, os.Stdout, visibilityNormal, levelInfo, true, format, args...)
+	message := fmt.Sprintf(format, args...)
+	info(Parms, visibilityNormal, message)
+}
+
+// Header writes a highlighted command or workflow header.
+func Header(Parms structures.Parms, format string, args ...any) {
+	writeMessage(Parms, os.Stdout, visibilityNormal, levelHeader, true, format, args...)
+}
+
+// Step writes an indented Info message only in very verbose mode.
+func Step(Parms structures.Parms, format string, args ...any) {
+	message := "\t" + fmt.Sprintf(format, args...)
+	info(Parms, visibilityVeryVerbose, message)
+}
+
+func info(Parms structures.Parms, visibility messageVisibility, message string) {
+	writeMessage(Parms, os.Stdout, visibility, levelInfo, true, "%s", message)
 }
 
 func Success(Parms structures.Parms, format string, args ...any) {
@@ -101,6 +119,8 @@ func messageColor(level messageLevel) string {
 	switch level {
 	case levelVerbose:
 		return colorBlue
+	case levelHeader:
+		return colorGray
 	case levelInfo:
 		return colorWhite
 	case levelSuccess:

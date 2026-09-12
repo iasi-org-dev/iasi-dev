@@ -23,7 +23,10 @@ func Build(Parms *structures.Parms) []string {
 		if isBlackListed(*Parms, repository) {
 			continue
 		}
-		cli.Info(*Parms, "Construyendo\t%s", filepath.Base(repository))
+		if Parms.Subcommand == "" {
+			cli.Header(*Parms, "Build %s", filepath.Base(repository))
+		}
+		cli.Step(*Parms, "Building")
 
 		rc := buildRepository(repository, *Parms)
 		Parms.LastRC = rc

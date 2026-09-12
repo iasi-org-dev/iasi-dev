@@ -1,6 +1,8 @@
 package runners
 
 import (
+	"path/filepath"
+
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
@@ -12,6 +14,7 @@ func Workflow(Parms *structures.Parms) {
 
 	for _, repository := range repositories {
 		Parms.Repos = []string{repository}
+		cli.Header(*Parms, "%s %s", workflowName(Parms.Subcommand), filepath.Base(repository))
 
 		switch Parms.Subcommand {
 		case "build":
@@ -73,4 +76,18 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 // NothingToDo means build succeeded but found no buildable IASI project.
 func workflowContinuesAfterBuild(rc int) bool {
 	return RC.Result(rc) != RC.NothingToDo
+}
+
+// workflowName returns the display name of a workflow.
+func workflowName(name string) string {
+	switch name {
+	case "build":
+		return "Building"
+	case "publish":
+		return "Publishing"
+	case "release":
+		return "Releasing"
+	default:
+		return name
+	}
 }

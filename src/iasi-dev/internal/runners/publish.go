@@ -22,7 +22,10 @@ func Publish(Parms *structures.Parms) []string {
 		if isBlackListed(*Parms, repository) {
 			continue
 		}
-		cli.Info(*Parms, "Publicando\t%s", filepath.Base(repository))
+		if Parms.Subcommand == "" {
+			cli.Header(*Parms, "Publish %s", filepath.Base(repository))
+		}
+		cli.Step(*Parms, "Publishing")
 
 		rc := publishRepository(repository, *Parms)
 		if RC.Has(handleRC(Parms, rc), RC.Skip) {
