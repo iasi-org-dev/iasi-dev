@@ -29,6 +29,7 @@ const (
 )
 
 const (
+	logBanner   = "============================================================"
 	colorReset  = "\033[0m"
 	colorBold   = "\033[1m"
 	colorBlue   = "\033[34m"
@@ -57,8 +58,18 @@ func Info(Parms structures.Parms, format string, args ...any) {
 }
 
 // Header writes a highlighted command or workflow header.
+// In the log, the header is surrounded by a simple timestamped banner.
 func Header(Parms structures.Parms, format string, args ...any) {
-	writeMessage(Parms, os.Stdout, visibilityNormal, levelHeader, true, format, args...)
+	message := fmt.Sprintf(format, args...)
+	writeLogMessage(Parms, logBanner)
+	writeLogMessage(Parms, message)
+	writeLogMessage(Parms, logBanner)
+
+	if !messageVisible(Parms, visibilityNormal) {
+		return
+	}
+
+	writeConsoleMessage(os.Stdout, levelHeader, true, message)
 }
 
 // Step writes an indented Info message only in very verbose mode.
@@ -88,27 +99,30 @@ func Error(rc int, Parms structures.Parms, format string, args ...any) {
 }
 
 func writeMessage(Parms structures.Parms, writer io.Writer, visibility messageVisibility, level messageLevel, bold bool, format string, args ...any) {
-	now := time.Now()
 	message := fmt.Sprintf(format, args...)
-	writeLog(Parms, fmt.Sprintf("%s - %s\n", now.Format("15:04:05"), message))
+	writeLogMessage(Parms, message)
 
 	if !messageVisible(Parms, visibility) {
 		return
 	}
 
+	writeConsoleMessage(writer, level, bold, message)
+}
+
+func writeConsoleMessage(writer io.Writer, level messageLevel, bold bool, message string) {
 	style := messageColor(level)
 	if bold {
 		style = colorBold + style
 	}
 
-	fmt.Fprintf(writer, "%s - %s%s%s\n", now.Format("15:04:05"), style, message, colorReset)
+	fmt.Fprintf(writer, "%s - %s%s%s\n", time.Now().Format("15:04:05"), style, message, colorReset)
 }
 
-func writeLog(Parms structures.Parms, message string) {
+func writeLogMessage(Parms structures.Parms, message string) {
 	if Parms.LogFile == nil {
 		return
 	}
-	fmt.Fprint(Parms.LogFile, message)
+	fmt.Fprintf(Parms.LogFile, "%s - %s\n", time.Now().Format("15:04:05"), message)
 }
 
 func messageVisible(Parms structures.Parms, visibility messageVisibility) bool {
