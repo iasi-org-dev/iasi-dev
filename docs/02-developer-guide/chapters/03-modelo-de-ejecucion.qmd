@@ -1,0 +1,43 @@
+# Modelo de ejecución
+
+## Del comando a la operación
+
+Una ejecución típica sigue este recorrido conceptual:
+
+```text
+argumentos
+   ↓
+selección de proyectos/repositorios
+   ↓
+identificación de la organización
+   ↓
+preparación de log y opciones
+   ↓
+runner
+   ↓
+comandos externos
+   ↓
+resultado acumulado
+```
+
+La preparación común permite que los runners reciban una visión ya coherente del trabajo a realizar.
+
+## Selección de repositorios
+
+Los argumentos posicionales no representan necesariamente un único repositorio. Pueden señalar una carpeta desde la que se descubren varios repositorios Git.
+
+Si la ruta indicada está dentro de un repositorio, se selecciona ese repositorio. Si no, se recorren sus subdirectorios buscando repositorios, respetando exclusiones.
+
+## Organización
+
+Cuando una operación necesita conocer la organización, `iasi-dev` la deduce a partir de los remotos `origin` de los repositorios seleccionados. Todos deben apuntar a la misma organización.
+
+La variable de organización `VERSION` proporciona la versión estable conocida. El modo `-p` es una excepción deliberada: publicar un estado local ya preparado no debe requerir consultar previamente una organización remota que quizá todavía no exista.
+
+## Estado compartido durante una ejecución
+
+Los runners comparten opciones, repositorios activos, resultado acumulado, log y otros datos de ejecución. El objetivo no es crear un framework genérico, sino disponer de un contexto operacional pequeño y explícito para el CLI.
+
+## Operaciones parciales
+
+Cuando una operación sobre un repositorio deja de ser aplicable, ese repositorio puede quedar fuera de las siguientes etapas del workflow. Esto permite que una ejecución sobre varios repositorios siga teniendo una semántica coherente sin forzar a todos a recorrer exactamente el mismo camino.

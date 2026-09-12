@@ -1,9 +1,11 @@
 package runners
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
+	"iasi-dev/internal/args"
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
@@ -13,7 +15,11 @@ import (
 // Promote is organization-wide and therefore runs once with the complete repository set.
 func Workflow(Parms *structures.Parms) {
 	if Parms.Subcommand == "promote" {
-		cli.Header(*Parms, "%s %s", workflowName(Parms.Subcommand), Parms.Organization)
+		if Parms.Push {
+			cli.Header(*Parms, "Pushing %s", strings.TrimSuffix(Parms.Organization, "-dev"))
+		} else {
+			cli.Header(*Parms, "%s %s", workflowName(Parms.Subcommand), Parms.Organization)
+		}
 		workflowPromote(true, Parms)
 		return
 	}
@@ -83,6 +89,11 @@ func workflowRelease(standalone bool, Parms *structures.Parms) {
 // workflowPromote promotes the complete development organization, materializes
 // the resulting state locally as the stable organization and, unless -l is active, pushes it.
 func workflowPromote(standalone bool, Parms *structures.Parms) {
+	if Parms.Push {
+		workflowPromotePush(Parms)
+		return
+	}
+
 	Parms.Repos = Promote(Parms)
 	if len(Parms.Repos) == 0 {
 		return
@@ -96,6 +107,28 @@ func workflowPromote(standalone bool, Parms *structures.Parms) {
 		return
 	}
 
+	Parms.Repos = push(Parms)
+}
+
+// workflowPromotePush publishes only the already materialized stable organization.
+// It deliberately skips promotion and materialization.
+func workflowPromotePush(Parms *structures.Parms) {
+	destination := workflowPromoteDestination(Parms)
+	info, err := os.Stat(destination)
+	if err != nil || !info.IsDir() {
+		cli.Error(RC.Error, *Parms, "No existe la organización estable local para publicar: %s", destination)
+	}
+
+	pushParms := *Parms
+	pushParms.Targets = []string{destination}
+	pushParms.Repos = nil
+	pushParms.BlackList = nil
+	args.Prepare(&pushParms)
+	if len(pushParms.Repos) == 0 {
+		cli.Error(RC.Error, *Parms, "No se encontraron repositorios en la organización estable local: %s", destination)
+	}
+
+	Parms.Repos = pushParms.Repos
 	Parms.Repos = push(Parms)
 }
 

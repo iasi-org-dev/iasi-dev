@@ -6,32 +6,34 @@ func printHelp() {
 	cli.Direct(`IASI Dev
 	
 	Usage:
-	  iasi-dev <command> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
+	  iasi-dev <command> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-p] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
 	  iasi-dev workflow <build|publish|release> [-h] [-s] [-v|-V] [-a] [-c] [-d] [-f] [-l] [-t] [-i] [--path value] [--exclude value[,value]*] [--format value] [--message value] [target...]
 	  iasi-dev workflow promote vMAJOR.MINOR.PATCH [-l] [-h] [-s] [-v|-V] [-d] [--path value] [target...]
+	  iasi-dev workflow promote -p [-h] [-s] [-v|-V] [-d] [--path value]
 	  iasi-dev promote vMAJOR.MINOR.PATCH [-h] [-s] [-v|-V] [-d] [--path value] [target...]
+	  iasi-dev promote -p [-h] [-s] [-v|-V] [-d] [--path value]
 	  iasi-dev restore [vMAJOR.MINOR.PATCH] [-h] [-s] [-v|-V] [-d] [--path value] [target...]
 	  iasi-dev materialize [-l] <destination> [source] [-h] [-s] [-v|-V] [-d] [--path value]
 	  iasi-dev version [organization] [-h] [-s] [-v|-V] [-d] [--path value]
 	
 	Commands:
-	  help       Show help
-	  build      Build through iasi.quarto
-	  publish    Publish through iasi.quarto
-	  release    Release through iasi.quarto
-	  commit     Commit
-	  promote    Validate and create a new stable organization version (promotion steps pending)
-	  restore    Restore repositories to a tagged version; without a version, restore main
-	  materialize Materialize an organization into a destination workspace without Git history
-	  workflow   Run a workflow repository by repository
-	  sync       Sync shared files from iasi-common
-	  version    Show VERSION for the explicit or current organization
+	  help         Show help
+	  build        Build through iasi.quarto
+	  publish      Publish through iasi.quarto
+	  release      Release through iasi.quarto
+	  commit       Commit selected repositories
+	  promote      Promote an organization version; with -p, push only
+	  restore      Restore repositories to a tagged version; without a version, restore main
+	  materialize  Materialize an organization into a destination workspace without Git history
+	  workflow     Run a development workflow
+	  sync         Sync shared files from iasi-common
+	  version      Show VERSION for the explicit or current organization
 	
 	Workflows:
-	  build      Build and commit
-	  publish    Publish and commit; optionally include previous stages with -a
-	  release    Release and commit; optionally include previous stages with -a
-	  promote    Promote the development organization, materialize the stable organization and push it unless -l
+	  build        Build and commit
+	  publish      Publish and commit; optionally include previous stages with -a
+	  release      Release and commit; optionally include previous stages with -a
+	  promote      Promote the development organization, materialize it locally and push it unless -l; with -p, push only
 	
 	Options:
 	  -h         Show help.
@@ -44,10 +46,11 @@ func printHelp() {
 	  -f         Force the operation when supported.
 	  -i         Install the artifact when applicable.
 	  -l         Keep the operation local; do not publish to GitHub when supported.
+	  -p         Push only; with promote, do not promote or materialize.
 	  -t         Continue when an operation fails.
 	
 	Parameters:
-	  --path value               Change to this directory before common preparation.
+	  --path value               Change to this directory before resolving projects.
 	  --exclude value[,value]*  Add exclusions. Existing files are read one exclusion per line; .git, .github and tests are always excluded.
 	  --format value            Output format passed to build.
 	  --message value           Commit message.

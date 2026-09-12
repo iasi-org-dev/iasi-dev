@@ -2,17 +2,22 @@
 
 ```{r}
 #| label: tbl-comandos
-#| tbl-cap: "Comandos principales"
+#| tbl-cap: "Comandos públicos de `iasi-dev`"
 
 commands = data.frame(
-  Comando = c("build", "publish", "commit", "release", "workflow", "sync"),
+  Comando = c("help", "build", "publish", "release", "commit", "version", "promote", "restore", "materialize", "workflow", "sync"),
   Finalidad = c(
-    "Construir los targets seleccionados.",
-    "Publicar los targets seleccionados.",
-    "Procesar los cambios de los repositorios seleccionados.",
-    "Materializar la estructura de release.",
-    "Ejecutar un flujo de trabajo de IASI.",
-    "Sincronizar elementos compartidos desde su origen canónico."
+    "Mostrar la ayuda.",
+    "Construir proyectos IASI.",
+    "Publicar proyectos IASI.",
+    "Ejecutar la release definida por el proyecto.",
+    "Crear commits y, salvo modo local, enviarlos al remoto.",
+    "Mostrar la versión registrada para una organización.",
+    "Promover una nueva versión común de una organización.",
+    "Restaurar los repositorios a una versión o a main.",
+    "Crear una copia limpia de una organización sin conservar su historia Git.",
+    "Ejecutar una secuencia de operaciones.",
+    "Sincronizar recursos compartidos desde iasi-common."
   )
 )
 
@@ -22,63 +27,280 @@ knitr::kable(commands, col.names = c("Comando", "Finalidad"), align = c("l", "l"
 ## `build`
 
 ```text
-iasi-dev build [targets...]
+iasi-dev build [proyectos...]
 ```
 
-Construye los targets seleccionados utilizando el mecanismo adecuado para cada artefacto IASI.
+Construye los proyectos seleccionados. La lógica específica de construcción se delega en `iasi.quarto`.
+
+Puedes indicar uno o varios formatos:
+
+```text
+iasi-dev build --format html,pdf iasi-book-I
+```
 
 ## `publish`
 
 ```text
-iasi-dev publish [targets...]
+iasi-dev publish [proyectos...]
 ```
 
-Publica los targets seleccionados.
+Publica los proyectos seleccionados mediante `iasi.quarto`.
 
-## `commit`
-
-```text
-iasi-dev commit [targets...]
-```
-
-Procesa los cambios de los repositorios seleccionados.
-
-La operación comprueba si existen cambios, los incorpora al commit y crea el commit correspondiente. Cuando la ejecución no es local, puede realizar también la operación remota definida para el proceso.
-
-Si no hay cambios pendientes, el resultado es “nada que hacer”, no un error.
-
-Puede indicarse un mensaje:
+Cuando el proyecto lo soporta, `-f` fuerza la publicación:
 
 ```text
-iasi-dev commit --message "Actualización de documentación" iasi-tools-dev
+iasi-dev publish -f iasi-book-I
 ```
 
 ## `release`
 
 ```text
-iasi-dev release [targets...]
+iasi-dev release [proyectos...]
 ```
 
-Materializa la estructura de release definida para el proyecto.
+Ejecuta la operación de release definida por `iasi.quarto` para cada repositorio seleccionado.
+
+## `commit`
+
+```text
+iasi-dev commit [proyectos...]
+```
+
+Para cada repositorio con cambios:
+
+```text
+git status
+   ↓
+git add -A .
+   ↓
+git commit
+   ↓
+git push
+```
+
+Puedes indicar el mensaje del commit:
+
+```text
+iasi-dev commit --message "Actualización de documentación" iasi-dev
+```
+
+Con `-l`, el commit se crea localmente pero no se hace `push`:
+
+```text
+iasi-dev commit -l iasi-dev
+```
+
+Si no existen cambios pendientes, el resultado es simplemente “nada que hacer”.
+
+## `version`
+
+```text
+iasi-dev version [organización]
+```
+
+Muestra la versión registrada para la organización.
+
+```text
+iasi-dev version iasi-org-dev
+```
+
+Si no indicas una organización, `iasi-dev` intenta determinarla a partir de los repositorios con los que estás trabajando.
+
+## `promote`
+
+```text
+iasi-dev promote vMAJOR.MINOR.PATCH [proyectos...]
+```
+
+Promueve una nueva versión común de la organización.
+
+Antes de hacerlo, comprueba que:
+
+- la versión actual es válida;
+- la versión nueva tiene formato `vMAJOR.MINOR.PATCH`;
+- los repositorios están alineados en la misma versión;
+- la nueva versión es superior a la existente.
+
+Después crea el tag de versión en todos los repositorios y publica esos tags. Si una parte de la operación falla, intenta deshacer los tags ya creados para no dejar la organización a medias.
+
+Los tags forman parte siempre de `promote`. La opción `-l` no cambia esta parte.
+
+### Publicar solamente una organización ya preparada
+
+```text
+iasi-dev promote -p
+```
+
+`-p` significa **push only**: no crea una versión, no crea tags y no materializa nada. Solo publica la organización local existente.
+
+No se puede combinar `-p` con `-l`, ni indicar una versión al utilizar `-p`.
+
+## `restore`
+
+```text
+iasi-dev restore [vMAJOR.MINOR.PATCH] [proyectos...]
+```
+
+Restaura todos los repositorios seleccionados a una versión común.
+
+```text
+iasi-dev restore v1.2.0
+```
+
+La versión debe existir como tag en todos los repositorios. Antes de cambiar nada, `iasi-dev` comprueba que el destino existe en todos ellos.
+
+Si omites la versión:
+
+```text
+iasi-dev restore
+```
+
+los repositorios vuelven a `main`.
+
+Si una restauración falla a mitad de la operación, `iasi-dev` intenta devolver los repositorios ya modificados al estado en el que estaban antes.
+
+## `materialize`
+
+```text
+iasi-dev materialize [-l] <destino> [origen]
+```
+
+Crea una copia de una organización en otra carpeta sin conservar la historia Git anterior.
+
+La operación:
+
+```text
+copia los repositorios a un temporal
+        ↓
+git init en cada copia
+        ↓
+ajusta origin para la organización destino
+        ↓
+sustituye el destino
+        ↓
+push, salvo que se use -l
+```
+
+Ejemplo:
+
+```text
+iasi-dev materialize C:\iasi-org C:\iasi-org-dev
+```
+
+Si omites el origen, se utiliza la carpeta desde la que estás trabajando:
+
+```text
+iasi-dev materialize C:\iasi-org
+```
+
+Si el directorio destino no existe, `iasi-dev` pregunta si quieres crearlo.
+
+Con `-l`, la nueva organización queda preparada únicamente en local:
+
+```text
+iasi-dev materialize -l C:\iasi-org C:\iasi-org-dev
+```
 
 ## `workflow`
 
+`workflow` encadena operaciones habituales.
+
+### `workflow build`
+
 ```text
-iasi-dev workflow [targets...]
+iasi-dev workflow build [proyectos...]
 ```
 
-Ejecuta un flujo de trabajo de IASI sobre los targets seleccionados.
+Ejecuta:
+
+```text
+build → commit
+```
+
+### `workflow publish`
+
+```text
+iasi-dev workflow publish [proyectos...]
+```
+
+Ejecuta:
+
+```text
+publish → commit
+```
+
+Con `-a`, ejecuta también las etapas anteriores:
+
+```text
+iasi-dev workflow publish -a
+```
+
+```text
+build → publish → commit
+```
+
+### `workflow release`
+
+```text
+iasi-dev workflow release [proyectos...]
+```
+
+Ejecuta:
+
+```text
+release → commit
+```
+
+Con `-a`:
+
+```text
+build → publish → release → commit
+```
+
+### `workflow promote`
+
+```text
+iasi-dev workflow promote vMAJOR.MINOR.PATCH
+```
+
+Es el flujo completo de promoción de la organización de desarrollo:
+
+```text
+promote
+   ↓
+materialize local
+   ↓
+push de la organización estable
+```
+
+Si trabajas en una organización llamada `iasi-org-dev`, la organización estable se materializa como una carpeta hermana llamada `iasi-org`.
+
+Con `-l`:
+
+```text
+iasi-dev workflow promote -l v1.2.0
+```
+
+se ejecutan la promoción y la materialización, pero la organización estable queda solo en local.
+
+Más adelante puedes publicarla sin repetir la promoción:
+
+```text
+iasi-dev workflow promote -p
+```
+
+`-p` ejecuta únicamente el `push` de la organización estable local que ya existe.
 
 ## `sync`
 
 ```text
-iasi-dev sync <elemento...>
+iasi-dev sync <recurso...>
 ```
 
-Sincroniza un elemento compartido desde su origen canónico hacia las copias existentes en el workspace.
+Sincroniza recursos compartidos desde `iasi-common` hacia las copias que ya existen en el resto del workspace.
 
 ```text
-common
-  ↓
-copias existentes
+iasi-dev sync .gitattributes
 ```
+
+También puedes indicar una ruta relativa dentro de `iasi-common` cuando un nombre no sea suficiente para identificar el recurso.

@@ -1,0 +1,43 @@
+# Propósito y principios
+
+## Qué es `iasi-dev`
+
+`iasi-dev` es la interfaz de desarrollo operativa de IASI. Reúne en un vocabulario común operaciones que, de otro modo, quedarían repartidas entre Git, GitHub, R, Quarto y scripts específicos.
+
+Su valor no consiste en ocultar esas herramientas, sino en **darles una semántica IASI**.
+
+## Principios de diseño
+
+### Un verbo, una responsabilidad
+
+Los verbos públicos deben expresar operaciones reconocibles y mantener responsabilidades acotadas. Por ejemplo:
+
+- `build` construye;
+- `publish` publica artefactos;
+- `commit` confirma cambios en Git;
+- `release` delega la liberación del artefacto;
+- `promote` establece una versión estable de la organización;
+- `materialize` crea una representación local independiente del historial Git;
+- `restore` lleva una organización a una versión etiquetada.
+
+Cuando una operación necesita combinar varias acciones, la composición corresponde preferentemente a un **workflow**.
+
+### Composición antes que duplicación
+
+Un workflow no debe reimplementar lo que ya sabe hacer un verbo. Debe orquestar operaciones existentes y añadir solo la lógica necesaria para encadenarlas.
+
+`workflow promote` es el ejemplo más claro: promoción, materialización local y publicación remota son conceptos distintos y se componen en ese orden.
+
+### Organización y repositorio son escalas diferentes
+
+La mayoría de operaciones trabajan repositorio a repositorio. Otras, como `promote`, tienen sentido únicamente si se consideran todos los repositorios de la organización como un conjunto coherente.
+
+Esta diferencia debe permanecer explícita en el diseño.
+
+### El CLI mantiene intención; las herramientas especializadas conservan su conocimiento
+
+`iasi-dev` no intenta absorber todo el conocimiento de `iasi.quarto`, Git o GitHub. Cuando una herramienta especializada ya conoce cómo realizar una operación, `iasi-dev` coordina y delega.
+
+### Lo local y lo remoto deben poder separarse
+
+Siempre que la operación lo permita, debe ser posible preparar un estado local y decidir después cuándo publicarlo. La pareja `-l` y `-p` en la promoción expresa precisamente esa separación.

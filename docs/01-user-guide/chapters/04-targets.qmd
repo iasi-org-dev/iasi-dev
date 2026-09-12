@@ -1,52 +1,99 @@
-# Targets
+# Proyectos y carpetas
 
-Los targets son los elementos sobre los que se aplica una operación de `iasi-dev`.
+En muchos comandos, los últimos argumentos indican los proyectos o carpetas sobre los que quieres trabajar.
 
-## Targets explícitos
+En la ayuda del CLI pueden aparecer como `target` o `targets`. En esta guía los llamaremos simplemente **proyectos** o **carpetas**.
+
+## Un repositorio concreto
 
 ```text
 iasi-dev build iasi-book-I
 ```
 
+## Varios repositorios
+
 ```text
 iasi-dev build iasi-book-I iasi-book-II
 ```
 
-## El target `.`
+## Una carpeta que contiene repositorios
 
-`.` se interpreta según las reglas de resolución de IASI. No se trata simplemente como una cadena literal.
+```text
+iasi-dev build C:\iasi-org-dev
+```
 
-## Sin targets explícitos
+`iasi-dev` busca repositorios Git dentro de la carpeta indicada y aplica el comando a los que encuentre.
 
-Para los comandos que lo permiten, la ausencia de targets hace que `iasi-dev` determine los elementos aplicables desde el contexto actual.
+## Ejecutar desde dentro de un repositorio
+
+Si indicas una carpeta que está dentro de un repositorio, `iasi-dev` utiliza ese repositorio como unidad de trabajo.
+
+Por ejemplo, si estás dentro de:
+
+```text
+C:\iasi-org-dev\iasi-book-I\chapters
+```
+
+y ejecutas:
+
+```text
+iasi-dev build .
+```
+
+la operación se aplica al repositorio `iasi-book-I`.
+
+## Sin indicar ningún proyecto
+
+Si el comando lo permite y no indicas ningún proyecto, se utiliza la carpeta actual:
+
+```text
+iasi-dev build
+```
 
 ## Exclusiones
 
-Determinadas ubicaciones, como áreas de pruebas, pueden quedar fuera del procesamiento normal.
+Durante la búsqueda de repositorios se excluyen siempre determinadas carpetas de infraestructura, como `.git`, `.github` y `tests`.
 
-## Targets solicitados y targets efectivos
+Puedes añadir más exclusiones:
 
-```{r}
-#| label: tbl-targets
-#| tbl-cap: "Dos vistas de los targets"
-
-targets = data.frame(
-  Vista = c("RequestedTargets", "Targets"),
-  Contenido = c(
-    "Lo que el usuario indicó explícitamente en la línea de comandos.",
-    "Los targets resultantes después de aplicar las reglas de resolución de IASI."
-  )
-)
-
-knitr::kable(targets, col.names = c("Vista", "Contenido"), align = c("l", "l"))
+```text
+iasi-dev build --exclude outputs,temp .
 ```
 
-Esta diferencia resulta especialmente importante en comandos como `sync`.
+También puedes utilizar un fichero con una exclusión por línea:
 
-## `sync` requiere una petición explícita
+```text
+iasi-dev build --exclude exclusions.txt .
+```
+
+## Comandos con argumentos especiales
+
+No todos los comandos interpretan sus argumentos finales de la misma forma.
+
+`sync` recibe nombres o rutas de recursos compartidos:
 
 ```text
 iasi-dev sync .gitattributes
 ```
 
-`sync` no debe inferir automáticamente qué elemento desea sincronizar el usuario. Ejecutarlo sin ningún elemento explícito es un error.
+`materialize` recibe primero el destino y, opcionalmente, el origen:
+
+```text
+iasi-dev materialize C:\iasi-org C:\iasi-org-dev
+```
+
+`version` puede recibir el nombre de una organización:
+
+```text
+iasi-dev version iasi-org
+```
+
+`promote` y `restore` pueden recibir una versión:
+
+```text
+iasi-dev promote v1.2.0
+```
+
+```text
+iasi-dev restore v1.2.0
+```

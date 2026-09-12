@@ -16,7 +16,9 @@ import (
 func prepareParms(Parms *structures.Parms) {
 	args.Prepare(Parms)
 	prepareOrganization(Parms)
-	loadOrganizationVersion(Parms)
+	if !Parms.Push {
+		loadOrganizationVersion(Parms)
+	}
 }
 
 // prepareOrganization keeps an explicit organization or deduces one from the discovered Git origins.

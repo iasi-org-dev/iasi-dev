@@ -6,31 +6,41 @@
 iasi-dev help
 ```
 
-Si se ejecuta `iasi-dev` sin indicar un comando, se muestra igualmente la ayuda.
+También se muestra la ayuda si ejecutas `iasi-dev` sin indicar ningún comando.
 
-## Trabajar con un target
+## Construir el proyecto actual
 
-```text
-iasi-dev build iasi-book-I
-```
-
-## Trabajar con varios targets
-
-```text
-iasi-dev build iasi-book-I iasi-book-II
-```
-
-## Trabajar desde el contexto actual
+Sitúate dentro del repositorio y ejecuta:
 
 ```text
 iasi-dev build
 ```
 
-o:
+También puedes escribir explícitamente:
 
 ```text
 iasi-dev build .
 ```
+
+## Construir otro proyecto
+
+```text
+iasi-dev build iasi-book-I
+```
+
+## Construir varios proyectos
+
+```text
+iasi-dev build iasi-book-I iasi-book-II
+```
+
+## Trabajar desde otra carpeta
+
+```text
+iasi-dev build --path C:\iasi-org-dev
+```
+
+Esto resulta útil cuando quieres lanzar una operación sobre varios repositorios sin cambiar previamente de directorio.
 
 ## Aumentar la información mostrada
 
@@ -39,21 +49,38 @@ iasi-dev build .
 #| tbl-cap: "Niveles habituales de información"
 
 levels = data.frame(
-  Opcion = c("-v", "-V", "-d"),
+  Opcion = c("-s", "-v", "-V", "-d"),
   Uso = c(
-    "Mostrar información adicional.",
-    "Mostrar un nivel de detalle mayor.",
-    "Mostrar información destinada al diagnóstico."
+    "Reducir al mínimo la salida de consola.",
+    "Mostrar más información sobre la ejecución.",
+    "Mostrar el nivel de detalle más alto.",
+    "Mostrar información adicional de diagnóstico."
   )
 )
 
 knitr::kable(levels, col.names = c("Opción", "Uso"), align = c("l", "l"))
 ```
 
-## Continuar cuando un target falla
+## Continuar aunque falle un proyecto
 
 ```text
 iasi-dev build -t .
 ```
 
-El modo tolerante permite excluir un target problemático y continuar con los siguientes cuando esa política sea apropiada.
+Con `-t`, si una operación falla en un repositorio y el error puede tratarse de forma tolerante, `iasi-dev` continúa con los siguientes.
+
+El error no desaparece: simplemente no impide procesar el resto.
+
+## Consultar la versión de una organización
+
+```text
+iasi-dev version
+```
+
+Si quieres consultar una organización concreta:
+
+```text
+iasi-dev version iasi-org-dev
+```
+
+Las operaciones que acceden a GitHub requieren que la CLI `gh` esté instalada y autenticada.

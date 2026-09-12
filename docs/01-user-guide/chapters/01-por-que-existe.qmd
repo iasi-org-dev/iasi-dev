@@ -1,51 +1,53 @@
 # Por qué existe `iasi-dev`
 
-IASI no es un único programa ni un único repositorio. Está formado por múltiples componentes y artefactos sobre los que es necesario realizar operaciones de desarrollo de forma repetible y consistente.
+IASI está formado por varios repositorios y proyectos. Muchas operaciones de desarrollo se repiten sobre más de uno: construir documentación, publicar, crear commits, preparar una release, sincronizar recursos compartidos o promover una versión estable.
 
-Sin una herramienta común, muchas tareas obligarían a repetir procedimientos manuales sobre distintos proyectos:
+Sin una herramienta común, el trabajo acabaría siendo una sucesión de pasos manuales:
 
 ```text
 entrar en un proyecto
-ejecutar una secuencia de comandos
+ejecutar comandos
 comprobar el resultado
 cambiar de proyecto
-repetir la secuencia
+repetir
 ```
 
-`iasi-dev` sustituye esa repetición por un modelo basado en una operación y una lista de targets.
+`iasi-dev` concentra esas operaciones en una única interfaz:
 
 ```text
-comando + targets
+iasi-dev <comando> [opciones] [proyectos...]
 ```
 
-El usuario expresa qué quiere hacer y dónde quiere hacerlo. La herramienta aplica las reglas y convenciones del proyecto IASI para realizar la operación correspondiente.
+El usuario indica **qué quiere hacer** y, cuando hace falta, **sobre qué proyecto o carpeta quiere hacerlo**. `iasi-dev` se ocupa de aplicar las reglas de IASI y de ejecutar las herramientas necesarias.
 
 ## Una herramienta específica de IASI
 
 `iasi-dev` no pretende ser una herramienta genérica de automatización.
 
-Su utilidad procede precisamente de conocer IASI: sus estructuras, sus tipos de artefacto, sus repositorios, sus recursos compartidos y sus operaciones habituales.
+Conoce cómo están organizados los repositorios de IASI, cómo se construyen y publican sus artefactos, cómo se sincronizan los recursos compartidos y cómo se gestionan operaciones que afectan a una organización completa.
 
-Esa especificidad permite que una misma orden de usuario pueda aplicarse de forma coherente a elementos que internamente requieren tratamientos diferentes.
+Eso permite utilizar una interfaz uniforme aunque por debajo intervengan Git, GitHub, R, Quarto u otras herramientas.
 
-## Procesamiento masivo
+## Una operación puede afectar a varios repositorios
 
-El procesamiento de varios targets no es un añadido secundario. Forma parte del modelo normal de trabajo.
+Es habitual aplicar una misma acción a más de un proyecto:
 
 ```text
 iasi-dev build iasi-book-I iasi-book-II
 ```
 
-La llamada expresa una única operación aplicada a dos targets.
+También puedes indicar una carpeta que contenga varios repositorios. `iasi-dev` localizará los repositorios aplicables dentro de ella y ejecutará la operación sobre cada uno.
 
-Esto permite realizar tareas de mantenimiento o desarrollo sobre conjuntos de proyectos sin convertir cada ejecución en una secuencia manual de comandos independientes.
+## Operaciones de repositorio y operaciones de organización
 
-## Una plataforma que evoluciona con IASI
+La mayoría de los comandos actúan repositorio a repositorio. Por ejemplo, `build`, `publish`, `release` o `commit`.
 
-IASI cambia y aparecen nuevas necesidades.
+Otras operaciones afectan al conjunto de la organización. `promote`, por ejemplo, comprueba que los repositorios están alineados antes de promover una nueva versión común.
 
-`iasi-dev` está concebido para incorporar esas necesidades manteniendo una forma de uso estable y coherente. Cuando IASI incorpora nuevos artefactos, herramientas o procesos, la plataforma puede asumir el tratamiento necesario sin obligar al usuario a adoptar una colección creciente de procedimientos diferentes.
+Esta diferencia es importante porque una promoción no debe dejar media organización en una versión y la otra media en otra.
 
-El objetivo no es que `iasi-dev` sirva para cualquier proyecto.
+## Una herramienta que evoluciona con IASI
 
-El objetivo es que siga sirviendo correctamente al proyecto IASI a medida que este evoluciona.
+A medida que IASI incorpora nuevos procesos, `iasi-dev` puede asumirlos sin obligar al usuario a memorizar una colección creciente de procedimientos independientes.
+
+El objetivo es sencillo: que las operaciones habituales de desarrollo de IASI sean repetibles, coherentes y fáciles de ejecutar.

@@ -3,7 +3,7 @@
 La forma general de una llamada es:
 
 ```text
-iasi-dev command [flags] [parameters] [targets...]
+iasi-dev <comando> [opciones] [proyectos...]
 ```
 
 ```{r}
@@ -11,52 +11,91 @@ iasi-dev command [flags] [parameters] [targets...]
 #| tbl-cap: "Modelo básico de `iasi-dev`"
 
 model = data.frame(
-  Elemento = c("Command", "Flags", "Parameters", "Targets"),
+  Elemento = c("Comando", "Opciones", "Proyectos o carpetas"),
   Pregunta = c(
     "¿Qué quiero hacer?",
-    "¿Cómo quiero modificar la ejecución?",
-    "¿Qué valores adicionales necesita la operación?",
-    "¿Sobre qué elementos de IASI quiero actuar?"
+    "¿Cómo quiero que se ejecute?",
+    "¿Dónde quiero aplicarlo?"
   )
 )
 
 knitr::kable(model, col.names = c("Elemento", "Pregunta que responde"), align = c("l", "l"))
 ```
 
-## Comando
+## El comando dice qué quieres hacer
 
-El comando expresa la operación solicitada.
+Por ejemplo:
 
-`build`, `publish`, `commit`, `release`, `workflow` y `sync` son operaciones diferentes, pero todas comparten el mismo modelo de invocación.
+```text
+iasi-dev build
+```
 
-## Flags y parámetros
+```text
+iasi-dev publish
+```
 
-Los flags modifican el comportamiento de la ejecución. Algunos parámetros aportan valores, como un mensaje de commit o un formato determinado.
+```text
+iasi-dev commit
+```
 
-No todos los flags o parámetros tienen necesariamente sentido para todos los comandos.
+Cada comando representa una operación distinta.
 
-## Targets
+## Las opciones modifican la ejecución
 
-Los targets indican los elementos sobre los que debe aplicarse la operación.
+Por ejemplo:
+
+```text
+iasi-dev commit -l
+```
+
+crea el commit localmente sin hacer `push`.
+
+O:
+
+```text
+iasi-dev build --format pdf
+```
+
+indica el formato que debe utilizar el build cuando sea aplicable.
+
+## Los proyectos indican dónde actuar
+
+Puedes indicar un repositorio concreto:
 
 ```text
 iasi-dev build iasi-book-I
 ```
 
-En esta llamada, `build` es el comando e `iasi-book-I` es el target solicitado.
-
-## Lo solicitado y lo resuelto
-
-`iasi-dev` distingue entre los targets indicados por el usuario y los targets que finalmente debe procesar.
+varios:
 
 ```text
-targets solicitados
-        ↓
-resolución
-        ↓
-targets efectivos
-        ↓
-ejecución
+iasi-dev build iasi-book-I iasi-book-II
 ```
 
-Esta separación permite que cada comando trabaje con targets ya preparados según las reglas de IASI.
+o una carpeta que los contenga.
+
+Si no indicas ningún proyecto, `iasi-dev` trabaja a partir de la carpeta en la que estás.
+
+## Puedes ejecutar desde otra carpeta con `--path`
+
+No es necesario cambiar primero de directorio:
+
+```text
+iasi-dev build --path C:\iasi-org-dev
+```
+
+`--path` indica a `iasi-dev` desde qué carpeta debe trabajar.
+
+## Dos niveles de trabajo
+
+Conviene distinguir dos casos:
+
+```text
+repositorio
+    build / publish / release / commit
+
+organización completa
+    promote / restore / materialize / workflow promote
+```
+
+No necesitas conocer cómo se implementa esa diferencia. Solo recordar que algunas operaciones trabajan proyecto a proyecto y otras coordinan varios repositorios como una unidad.

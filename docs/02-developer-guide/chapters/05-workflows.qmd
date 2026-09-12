@@ -1,0 +1,60 @@
+# Workflows
+
+## Por qué existen
+
+Los workflows representan tareas de desarrollo completas. Su función es **componer** operaciones sin borrar la identidad de cada una.
+
+## Workflows por repositorio
+
+`workflow build`, `workflow publish` y `workflow release` recorren los repositorios seleccionados de uno en uno.
+
+La opción `-a` incorpora etapas anteriores. La opción `-c` hace que las etapas intermedias actúen como checkpoints y realicen sus commits correspondientes.
+
+Un esquema simplificado es:
+
+```text
+workflow release -a
+    build
+      ↓
+    publish
+      ↓
+    release
+      ↓
+    commit
+```
+
+Con checkpoints, los commits pueden producirse también entre etapas.
+
+## Workflow de promoción
+
+`workflow promote` es diferente porque la promoción es una propiedad de la organización completa.
+
+```text
+workflow promote vX.Y.Z
+    │
+    ├─ promote
+    ├─ materialize local
+    └─ push
+```
+
+Con `-l`:
+
+```text
+workflow promote -l vX.Y.Z
+    │
+    ├─ promote
+    └─ materialize local
+```
+
+Y posteriormente:
+
+```text
+workflow promote -p
+    └─ push del estado estable local existente
+```
+
+El modo `-p` es **push-only**. No repite promoción, tags ni materialización.
+
+## Regla de diseño
+
+Si un nuevo workflow empieza a duplicar grandes fragmentos de runners existentes, probablemente está absorbiendo responsabilidades que no le corresponden.

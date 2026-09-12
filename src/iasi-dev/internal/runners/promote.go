@@ -19,7 +19,12 @@ type semanticVersion struct {
 }
 
 // Promote creates a new stable organization version from the current organization state.
+// With -p it performs only the publication step for the current local organization.
 func Promote(Parms *structures.Parms) []string {
+	if Parms.Push {
+		return push(Parms)
+	}
+
 	requireTargetVersion(Parms, "promote")
 
 	current, ok := parseSemanticVersion(Parms.Version)

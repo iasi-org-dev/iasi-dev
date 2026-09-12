@@ -1,0 +1,37 @@
+# Comandos y responsabilidades
+
+## Operaciones delegadas a `iasi.quarto`
+
+`build`, `publish` y `release` mantienen una frontera clara: `iasi-dev` descubre el repositorio y coordina la ejecución, mientras que `iasi.quarto` conserva el conocimiento específico del artefacto.
+
+Esto evita duplicar reglas de publicación o construcción en dos productos diferentes.
+
+## `commit`
+
+`commit` se ocupa de Git: detectar cambios, hacer `git add`, crear el commit y, salvo `-l`, hacer push.
+
+No debe convertirse en un workflow encubierto. Construir o publicar antes de confirmar cambios corresponde a los workflows.
+
+## `sync`
+
+`sync` propaga contenido compartido desde `iasi-common` hacia copias que **ya existen** en el workspace. No es un mecanismo general de replicación ni crea consumidores nuevos.
+
+## `version`
+
+`version` expone de forma directa la versión de la organización. Es deliberadamente pequeño.
+
+## `promote`
+
+`promote` opera a escala de organización. Su responsabilidad conceptual es validar una nueva versión estable y etiquetar de forma coherente todos los repositorios.
+
+El modo `-p` cambia la operación: no promociona ni etiqueta; publica únicamente el estado local existente.
+
+## `restore`
+
+`restore` es la operación inversa desde el punto de vista de navegación histórica: lleva todos los repositorios a `main` o a una versión etiquetada, preservando información suficiente para intentar rollback si la operación falla a mitad.
+
+## `materialize`
+
+`materialize` genera una organización local nueva a partir de otra sin conservar el historial Git. Copia a un temporal, inicializa Git, ajusta remotos y sustituye el destino solo cuando la materialización está preparada.
+
+La materialización y la publicación son conceptos distintos, aunque el comando público pueda encadenarlos cuando no se solicita `-l`.

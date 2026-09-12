@@ -11,6 +11,7 @@ type Parms struct {
 	Help                   bool     // Muestra la ayuda.
 	Install                bool     // Instala el artefacto cuando proceda.
 	Local                  bool     // Mantiene local la publicación cuando la operación lo soporta.
+	Push                   bool     // Ejecuta solo la publicación remota cuando promote lo soporta.
 	Tolerant               bool     // Continúa cuando una operación falla.
 	Message                string   // Mensaje utilizado para el commit.
 	Format                 string   // Formato o formatos de salida.

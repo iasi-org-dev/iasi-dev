@@ -70,3 +70,31 @@ func TestPathParameter(t *testing.T) {
 		t.Fatalf("Organization = %q, want iasi-org", Parms.Organization)
 	}
 }
+
+func TestPromotePushOnlyHasNoTargetVersion(t *testing.T) {
+	Parms := Parse("promote", []string{"-p"})
+
+	if !Parms.Push {
+		t.Fatal("Push = false, want true")
+	}
+	if Parms.TargetVersion != "" {
+		t.Fatalf("TargetVersion = %q, want empty", Parms.TargetVersion)
+	}
+	if len(Parms.Targets) != 0 {
+		t.Fatalf("Targets = %v, want none", Parms.Targets)
+	}
+}
+
+func TestWorkflowPromotePushOnlyHasNoTargetVersion(t *testing.T) {
+	Parms := Parse("workflow", []string{"promote", "-p"})
+
+	if Parms.Subcommand != "promote" {
+		t.Fatalf("Subcommand = %q, want promote", Parms.Subcommand)
+	}
+	if !Parms.Push {
+		t.Fatal("Push = false, want true")
+	}
+	if Parms.TargetVersion != "" {
+		t.Fatalf("TargetVersion = %q, want empty", Parms.TargetVersion)
+	}
+}

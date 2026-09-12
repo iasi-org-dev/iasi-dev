@@ -1,0 +1,39 @@
+# Testing
+
+## Qué probar
+
+Los tests de `iasi-dev` deben concentrarse especialmente en decisiones que podrían romper semántica sin producir errores de compilación:
+
+- parsing de opciones;
+- separación entre operandos especiales y targets;
+- descubrimiento de repositorios;
+- deducción de organización;
+- comparación de versiones;
+- orden de workflows;
+- generación de argumentos Git;
+- rollback;
+- códigos de retorno;
+- visibilidad de mensajes.
+
+## Tests pequeños y deterministas
+
+Las funciones puras o casi puras son especialmente valiosas para comprobar reglas como:
+
+- `v1.2.3` es una versión válida;
+- el destino estable de `iasi-org-dev` es `iasi-org`;
+- `restore` a una versión usa detached HEAD;
+- el temporal de materialización es hermano del destino;
+- `-p` no admite versión ni targets.
+
+## Procesos externos
+
+Siempre que sea posible conviene separar la decisión de **qué comando ejecutar** de la ejecución física. Esto permite probar la semántica sin depender de una organización real de GitHub o de modificar repositorios durante el test.
+
+## Prueba mínima antes de integrar
+
+```text
+go test ./...
+go build ./...
+```
+
+Son el suelo, no el techo. Los cambios que afecten a workflows o repositorios reales merecen además pruebas de integración controladas.

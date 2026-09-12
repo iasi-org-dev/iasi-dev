@@ -1,0 +1,33 @@
+# Fronteras actuales y evolución prevista
+
+## Operaciones todavía en modo de previsualización
+
+En el estado actual de desarrollo, algunas operaciones sensibles están deliberadamente desacopladas de su ejecución destructiva completa.
+
+La lógica de `promote`, `restore`, `materialize` y el `push` de organización ya expresa el flujo deseado, pero determinadas acciones Git o de filesystem se previsualizan antes de convertirlas en mutaciones reales.
+
+Esta frontera es intencionada: permite estabilizar la semántica y los rollbacks antes de dar capacidad destructiva al CLI.
+
+## VERSION de organización
+
+La versión actual se obtiene de la variable `VERSION` de la organización GitHub. La actualización de esa variable después de una promoción completa sigue siendo una pieza a cerrar en la transacción final.
+
+## Materialización
+
+El diseño ya establece la transacción deseada:
+
+```text
+origen
+  ↓
+temporal
+  ↓
+git init + remotes
+  ↓
+sustitución del destino
+```
+
+La sustitución del destino debe seguir siendo el último paso local, de modo que un fallo previo no deje una organización estable a medio construir.
+
+## Regla para futuras decisiones
+
+Cuando haya varias implementaciones posibles, debe priorizarse la que conserve mejor las responsabilidades ya establecidas, incluso si una solución aparentemente más rápida permite “hacerlo todo” desde una única función.

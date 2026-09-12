@@ -29,6 +29,7 @@ func Parse(command string, values []string) structures.Parms {
 
 	Parms := parseArguments(values)
 	Parms.Subcommand = subcommand
+	validatePushMode(command, &Parms)
 	extractTargetVersion(command, &Parms)
 	extractVersionOrganization(command, &Parms)
 	extractMaterializeOperands(command, &Parms)
@@ -37,6 +38,22 @@ func Parse(command string, values []string) structures.Parms {
 	}
 
 	return Parms
+}
+
+func validatePushMode(command string, Parms *structures.Parms) {
+	isPromote := command == "promote" || (command == "workflow" && Parms.Subcommand == "promote")
+	if !Parms.Push {
+		return
+	}
+	if !isPromote {
+		cli.Error(RC.Error, *Parms, "-p solo está soportado por promote y workflow promote.")
+	}
+	if Parms.Local {
+		cli.Error(RC.Error, *Parms, "-p y -l son incompatibles.")
+	}
+	if len(Parms.Targets) != 0 {
+		cli.Error(RC.Error, *Parms, "-p no acepta versión ni targets: solo publica el estado local existente.")
+	}
 }
 
 // extractTargetVersion separates organization version operands from filesystem targets.
@@ -153,6 +170,8 @@ func parseFlag(args []string, i int, Parms *structures.Parms) {
 		Parms.Install = true
 	case 'l':
 		Parms.Local = true
+	case 'p':
+		Parms.Push = true
 	case 's':
 		Parms.Verbose = 0
 	case 't':

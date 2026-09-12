@@ -1,0 +1,46 @@
+# Evolución y extensión
+
+## Añadir un nuevo comando
+
+Antes de escribir código hay que decidir si estamos ante:
+
+1. una operación elemental nueva;
+2. una composición de operaciones existentes;
+3. una opción que modifica una operación existente;
+4. una capacidad interna reutilizable que no debe ser pública.
+
+`push` ilustra el cuarto caso: existe como primitive interna porque varios flujos pueden necesitarla, pero no es necesario exponer `iasi-dev push` como parte del lenguaje público.
+
+## Checklist de un comando nuevo
+
+Normalmente habrá que revisar:
+
+- sintaxis y validación de argumentos;
+- campos compartidos que realmente sean necesarios;
+- runner;
+- dispatcher principal;
+- ayuda pública;
+- tests de parsing;
+- tests del runner;
+- User Guide;
+- Developer Guide y Technical Guide si introduce conceptos nuevos.
+
+## Diseñar opciones
+
+Una opción debe modificar una intención existente sin convertir el comando en un acertijo.
+
+Ejemplo: `-p` no significa “además haz push”. En promoción significa **solo publicar lo ya preparado**. Esa semántica exclusiva evita repetir trabajo y permite separar preparación local de publicación.
+
+## Compatibilidad conceptual
+
+No todo cambio compatible sintácticamente es compatible conceptualmente. Conviene proteger especialmente:
+
+- el significado de cada verbo;
+- la escala repo/organización;
+- la separación local/remoto;
+- la delegación a herramientas especializadas;
+- el comportamiento transaccional de operaciones multi-repositorio.
+
+## Evolución sin sobregeneralizar
+
+`iasi-dev` es una herramienta de IASI. No necesita convertirse prematuramente en un framework universal de CLIs, VCS o pipelines. Las abstracciones deben aparecer cuando varias necesidades reales las justifiquen.
