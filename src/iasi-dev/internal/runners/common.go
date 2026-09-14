@@ -15,17 +15,18 @@ func handleRC(Parms *structures.Parms, rc int) int {
 		fmt.Printf("handleRC: tolerant=%t rc=0x%02X\n", Parms.Tolerant, rc)
 	}
 
-	RC.Add(Parms.RC, rc)
-
 	if !RC.IsErroneous(rc) {
+		RC.Add(Parms.RC, rc)
 		return rc
 	}
 
 	if Parms.Tolerant {
+		RC.Add(Parms.RC, rc)
 		return RC.Skip
 	}
 
 	cli.ErrorMessage(*Parms, "La operación ha fallado con RC 0x%02X. Revisa el log: %s", rc, logName(*Parms))
+	cli.Abort(rc, *Parms)
 	return RC.Skip
 }
 
