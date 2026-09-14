@@ -3,6 +3,7 @@ package runners
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"iasi-dev/internal/consts"
@@ -61,12 +62,21 @@ func TestWorkflowPromotePushUsesExistingStableOrganization(t *testing.T) {
 	stableRoot := filepath.Join(base, "iasi-org")
 	devRepo := filepath.Join(devRoot, "repo-a")
 	stableRepo := filepath.Join(stableRoot, "repo-a")
+	remote := filepath.Join(base, "repo-a.git")
 
-	for _, repository := range []string{devRepo, stableRepo} {
-		if err := os.MkdirAll(filepath.Join(repository, ".git"), 0755); err != nil {
-			t.Fatal(err)
-		}
+	if err := os.MkdirAll(devRepo, 0755); err != nil {
+		t.Fatal(err)
 	}
+	gitTest(t, base, "init", "-b", "main", stableRepo)
+	gitTest(t, stableRepo, "config", "user.name", "IASI Test")
+	gitTest(t, stableRepo, "config", "user.email", "iasi@example.invalid")
+	if err := os.WriteFile(filepath.Join(stableRepo, "README.md"), []byte("stable\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	gitTest(t, stableRepo, "add", ".")
+	gitTest(t, stableRepo, "commit", "-m", "stable")
+	gitTest(t, base, "init", "--bare", remote)
+	gitTest(t, stableRepo, "remote", "add", "origin", remote)
 
 	rc := RC.OK
 	parms := structures.Parms{
@@ -81,5 +91,8 @@ func TestWorkflowPromotePushUsesExistingStableOrganization(t *testing.T) {
 
 	if len(parms.Repos) != 1 || filepath.Clean(parms.Repos[0]) != filepath.Clean(stableRepo) {
 		t.Fatalf("Repos = %v, want [%s]", parms.Repos, stableRepo)
+	}
+	if got := strings.TrimSpace(gitTest(t, base, "--git-dir", remote, "rev-parse", "refs/heads/main")); got == "" {
+		t.Fatal("remote main was not pushed")
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"iasi-dev/internal/cli"
 	"iasi-dev/internal/commands"
+	"iasi-dev/internal/consts"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
 )
@@ -22,7 +23,8 @@ type semanticVersion struct {
 // With -p it performs only the publication step for the current local organization.
 func Promote(Parms *structures.Parms) []string {
 	if Parms.Push {
-		return push(Parms)
+		workflowPromotePush(Parms)
+		return append([]string{}, Parms.Repos...)
 	}
 
 	requireTargetVersion(Parms, "promote")
@@ -40,6 +42,8 @@ func Promote(Parms *structures.Parms) []string {
 	if len(Parms.Repos) == 0 {
 		cli.Error(RC.Error, *Parms, "No se encontraron repositorios para promover.")
 	}
+
+	validatePromoteWorkingTrees(Parms)
 
 	highest, highestText := repositoryHighestVersion(Parms, Parms.Repos[0], current, Parms.Version)
 
@@ -62,29 +66,60 @@ func Promote(Parms *structures.Parms) []string {
 	fmt.Printf("Highest version: %s\n", highestText)
 	fmt.Printf("Target version: %s\n", Parms.TargetVersion)
 
-	if compareSemanticVersions(target, highest) <= 0 {
-		cli.Error(RC.Error, *Parms, "La versión destino %s debe ser superior a %s", Parms.TargetVersion, highestText)
+	comparison := compareSemanticVersions(target, highest)
+	if comparison < 0 {
+		cli.Error(RC.Error, *Parms, "La versión destino %s no puede ser inferior a %s", Parms.TargetVersion, highestText)
+	}
+	if comparison == 0 {
+		if Parms.Version != Parms.TargetVersion || !repositoriesHaveTag(Parms, Parms.TargetVersion) {
+			cli.Error(RC.Error, *Parms, "La versión destino %s ya existe, pero la organización no está en un estado reanudable.", Parms.TargetVersion)
+		}
+		fmt.Printf("Version validation: already promoted; resuming\n")
+		return append([]string{}, Parms.Repos...)
 	}
 
 	fmt.Printf("Version validation: OK\n")
 
 	promoteTags(Parms)
+	setOrganizationVersion(Parms)
+	Parms.Version = Parms.TargetVersion
 
-	// TODO: materialize TargetVersion in a temporary workspace without Git history.
-	// TODO: replace the complete local stable organization only after successful materialization.
-	// TODO: update the VERSION organization variable after a successful promotion.
-
+	cli.Success(*Parms, "Organization promoted to %s.", Parms.TargetVersion)
 	return append([]string{}, Parms.Repos...)
 }
 
-// promoteTags previews the tag transaction used by promote.
-// promoteCommand currently prints each Git command and reports success without executing it.
+// promoteTags creates the organization version tag in every repository and publishes it.
+// A partial transaction is rolled back both remotely and locally.
+
+func validatePromoteWorkingTrees(Parms *structures.Parms) {
+	for _, repository := range Parms.Repos {
+		result := commands.Run(repository, Parms.LogFile, "git", "status", "--porcelain")
+		if result.RC != RC.OK {
+			cli.Error(RC.Error, *Parms, "No se pudo comprobar el estado de %s", repository)
+		}
+		if strings.TrimSpace(result.Stdout) != "" {
+			cli.Error(RC.Error, *Parms, "No se puede promover %s: hay cambios sin commit.", repository)
+		}
+	}
+}
+
+func repositoriesHaveTag(Parms *structures.Parms, version string) bool {
+	ref := "refs/tags/" + version
+	for _, repository := range Parms.Repos {
+		result := commands.Run(repository, Parms.LogFile, "git", "show-ref", "--verify", "--quiet", ref)
+		if result.RC != RC.OK {
+			return false
+		}
+	}
+	return true
+}
+
 func promoteTags(Parms *structures.Parms) {
 	created := []string{}
 	message := "IASI organization version " + Parms.TargetVersion
 
 	for _, repository := range Parms.Repos {
-		if !promoteCommand(repository, "tag", "-a", Parms.TargetVersion, "-m", message) {
+		if !promoteCommand(Parms, repository, "tag", "-a", Parms.TargetVersion, "-m", message) {
 			cli.ErrorMessage(*Parms, "No se pudo crear el tag %s en %s", Parms.TargetVersion, repository)
 			rollbackLocalTags(Parms, Parms.TargetVersion, created)
 			cli.Abort(RC.Error, *Parms)
@@ -94,7 +129,7 @@ func promoteTags(Parms *structures.Parms) {
 
 	pushed := []string{}
 	for _, repository := range Parms.Repos {
-		if !promoteCommand(repository, "push", "origin", Parms.TargetVersion) {
+		if !promoteCommand(Parms, repository, "push", "origin", Parms.TargetVersion) {
 			cli.ErrorMessage(*Parms, "No se pudo publicar el tag %s en %s", Parms.TargetVersion, repository)
 			rollbackRemoteTags(Parms, Parms.TargetVersion, pushed)
 			rollbackLocalTags(Parms, Parms.TargetVersion, created)
@@ -107,7 +142,7 @@ func promoteTags(Parms *structures.Parms) {
 func rollbackLocalTags(Parms *structures.Parms, version string, repositories []string) {
 	failed := false
 	for i := len(repositories) - 1; i >= 0; i-- {
-		if promoteCommand(repositories[i], "tag", "-d", version) {
+		if promoteCommand(Parms, repositories[i], "tag", "-d", version) {
 			continue
 		}
 		failed = true
@@ -121,7 +156,7 @@ func rollbackLocalTags(Parms *structures.Parms, version string, repositories []s
 func rollbackRemoteTags(Parms *structures.Parms, version string, repositories []string) {
 	failed := false
 	for i := len(repositories) - 1; i >= 0; i-- {
-		if promoteCommand(repositories[i], "push", "origin", "--delete", version) {
+		if promoteCommand(Parms, repositories[i], "push", "origin", "--delete", version) {
 			continue
 		}
 		failed = true
@@ -132,10 +167,35 @@ func rollbackRemoteTags(Parms *structures.Parms, version string, repositories []
 	}
 }
 
-// promoteCommand previews a Git command without executing it.
-func promoteCommand(repository string, args ...string) bool {
-	fmt.Printf("%s: git %s\n", filepath.Base(repository), formatCommandArguments(args))
-	return true
+func promoteCommand(Parms *structures.Parms, repository string, args ...string) bool {
+	cli.VeryVerbose(*Parms, "%s: git %s", filepath.Base(repository), formatCommandArguments(args))
+	result := commands.RunLogged(repository, Parms.LogFile, "git", args...)
+	return result.RC == RC.OK
+}
+
+func setOrganizationVersion(Parms *structures.Parms) {
+	// Use the REST update endpoint so changing VERSION does not accidentally change
+	// the organization variable visibility configured in GitHub.
+	endpoint := fmt.Sprintf("orgs/%s/actions/variables/%s", Parms.Organization, consts.OrganizationVersionVariable)
+	result := commands.Run(
+		".",
+		Parms.LogFile,
+		"gh",
+		"api",
+		"--method",
+		"PATCH",
+		endpoint,
+		"-f",
+		"value="+Parms.TargetVersion,
+	)
+	if result.RC == RC.OK {
+		return
+	}
+
+	cli.ErrorMessage(*Parms, "No se pudo actualizar %s de %s a %s.", consts.OrganizationVersionVariable, Parms.Organization, Parms.TargetVersion)
+	rollbackRemoteTags(Parms, Parms.TargetVersion, Parms.Repos)
+	rollbackLocalTags(Parms, Parms.TargetVersion, Parms.Repos)
+	cli.Abort(RC.Error, *Parms)
 }
 
 func formatCommandArguments(args []string) string {

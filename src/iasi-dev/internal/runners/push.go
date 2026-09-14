@@ -1,17 +1,15 @@
 package runners
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"iasi-dev/internal/cli"
+	"iasi-dev/internal/commands"
 	"iasi-dev/internal/consts/RC"
 	"iasi-dev/internal/structures"
 )
 
-// push publishes the current local organization state through each repository's origin remote.
-// It is deliberately package-private: there is no public `iasi-dev push` command.
-// Mutating Git operations are still previewed, consistently with promote and materialize.
+// push publishes the materialized organization through each repository's origin remote.
+// Materialized repositories intentionally have new Git histories, so publication replaces
+// the remote main branch rather than attempting to merge unrelated histories.
 func push(Parms *structures.Parms) []string {
 	if len(Parms.Repos) == 0 {
 		cli.Error(RC.Error, *Parms, "No se encontraron repositorios para publicar.")
@@ -19,8 +17,8 @@ func push(Parms *structures.Parms) []string {
 
 	cli.Step(*Parms, "Pushing organization")
 	for _, repository := range Parms.Repos {
-		if !pushRepository(repository) {
-			cli.Error(RC.Error, *Parms, "No se pudo publicar %s.", repository)
+		if !pushRepository(Parms, repository) {
+			cli.Error(RC.Error, *Parms, "No se pudo publicar %s. Revisa el log: %s", repository, logName(*Parms))
 		}
 	}
 
@@ -28,7 +26,7 @@ func push(Parms *structures.Parms) []string {
 	return append([]string{}, Parms.Repos...)
 }
 
-func pushRepository(repository string) bool {
-	fmt.Printf("%s: git push -u origin HEAD\n", filepath.Base(repository))
-	return true
+func pushRepository(Parms *structures.Parms, repository string) bool {
+	result := commands.RunLogged(repository, Parms.LogFile, "git", "push", "-u", "--force", "origin", "HEAD:main")
+	return result.RC == RC.OK
 }

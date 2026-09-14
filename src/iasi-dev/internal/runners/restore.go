@@ -17,7 +17,7 @@ type restoreState struct {
 	commit     string
 }
 
-// Restore previews restoring every repository to a tagged organization version.
+// Restore restores every repository to a tagged organization version.
 // Without a target version it restores the repositories to main.
 func Restore(Parms *structures.Parms) []string {
 	target := restoreTarget(Parms)
@@ -86,14 +86,13 @@ func repositoryRestoreState(Parms *structures.Parms, repository string) restoreS
 	return restoreState{repository: repository, commit: strings.TrimSpace(result.Stdout)}
 }
 
-// restoreRepositories previews the restore transaction.
-// restoreCommand currently prints each Git command and reports success without executing it.
+// restoreRepositories executes the restore transaction.
 func restoreRepositories(Parms *structures.Parms, target string, states []restoreState) {
 	restored := []restoreState{}
 
 	for _, state := range states {
 		args := restoreSwitchArguments(target)
-		if !restoreCommand(state.repository, args...) {
+		if !restoreCommand(Parms, state.repository, args...) {
 			cli.ErrorMessage(*Parms, "No se pudo restaurar %s a %s", state.repository, target)
 			rollbackRestore(Parms, restored)
 			cli.Abort(RC.Error, *Parms)
@@ -115,7 +114,7 @@ func rollbackRestore(Parms *structures.Parms, states []restoreState) {
 	for i := len(states) - 1; i >= 0; i-- {
 		state := states[i]
 		args := restoreRollbackArguments(state)
-		if restoreCommand(state.repository, args...) {
+		if restoreCommand(Parms, state.repository, args...) {
 			continue
 		}
 
@@ -135,8 +134,8 @@ func restoreRollbackArguments(state restoreState) []string {
 	return []string{"switch", "--detach", state.commit}
 }
 
-// restoreCommand previews a Git command without executing it.
-func restoreCommand(repository string, args ...string) bool {
-	fmt.Printf("%s: git %s\n", filepath.Base(repository), formatCommandArguments(args))
-	return true
+func restoreCommand(Parms *structures.Parms, repository string, args ...string) bool {
+	cli.VeryVerbose(*Parms, "%s: git %s", filepath.Base(repository), formatCommandArguments(args))
+	result := commands.RunLogged(repository, Parms.LogFile, "git", args...)
+	return result.RC == RC.OK
 }
