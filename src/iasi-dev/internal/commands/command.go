@@ -59,6 +59,12 @@ func command(directory string, friendly bool, logFile *os.File, name string, arg
 	if debug {
 		fmt.Printf("command: directory=%s friendly=%t name=%s args=%v\n", directory, friendly, name, args)
 	}
+
+	if name == "Rscript" && len(args) >= 2 && args[0] == "-e" {
+		args = append([]string{}, args...)
+		args[1] = "options(warn = 1); " + args[1]
+	}
+
 	writeCommand(logFile, directory, name, args...)
 
 	var stdout bytes.Buffer
@@ -79,6 +85,14 @@ func command(directory string, friendly bool, logFile *os.File, name string, arg
 
 	if err != nil {
 		result.RC = RC.Error
+		if name == "Rscript" {
+			if exitError, ok := err.(*exec.ExitError); ok {
+				code := exitError.ExitCode()
+				if code >= 0 && code <= 0xFF {
+					result.RC = code
+				}
+			}
+		}
 	}
 
 	return result
@@ -89,6 +103,12 @@ func commandLogged(directory string, friendly bool, logFile *os.File, name strin
 	if debug {
 		fmt.Printf("commandLogged: directory=%s friendly=%t name=%s args=%v\n", directory, friendly, name, args)
 	}
+
+	if name == "Rscript" && len(args) >= 2 && args[0] == "-e" {
+		args = append([]string{}, args...)
+		args[1] = "options(warn = 1); " + args[1]
+	}
+
 	writeCommand(logFile, directory, name, args...)
 
 	cmd := exec.Command(name, args...)
@@ -101,6 +121,14 @@ func commandLogged(directory string, friendly bool, logFile *os.File, name strin
 	result := structures.Result{RC: RC.OK}
 	if err != nil {
 		result.RC = RC.Error
+		if name == "Rscript" {
+			if exitError, ok := err.(*exec.ExitError); ok {
+				code := exitError.ExitCode()
+				if code >= 0 && code <= 0xFF {
+					result.RC = code
+				}
+			}
+		}
 	}
 
 	return result

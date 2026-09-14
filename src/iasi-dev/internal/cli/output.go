@@ -91,8 +91,16 @@ func Warning(Parms structures.Parms, format string, args ...any) {
 }
 
 // ErrorMessage writes a non-terminal error message.
+// The log entry is explicitly prefixed with ERROR while the console keeps the normal message.
 func ErrorMessage(Parms structures.Parms, format string, args ...any) {
-	writeMessage(Parms, os.Stderr, visibilityNormal, levelError, true, format, args...)
+	message := fmt.Sprintf(format, args...)
+	writeLogMessage(Parms, "ERROR: "+message)
+
+	if !messageVisible(Parms, visibilityNormal) {
+		return
+	}
+
+	writeConsoleMessage(os.Stderr, levelError, true, message)
 }
 
 // Error writes an error message and aborts execution.

@@ -12,7 +12,7 @@ import (
 // handleRC accumulates one result and applies the common error policy.
 func handleRC(Parms *structures.Parms, rc int) int {
 	if Parms.Debug {
-		fmt.Printf("handleRC: tolerant=%t rc=0x%02X\n", Parms.Tolerant, rc)
+		fmt.Printf("handleRC: tolerant=%t rc=%d (0x%02X)\n", Parms.Tolerant, rc, rc)
 	}
 
 	if !RC.IsErroneous(rc) {
@@ -25,7 +25,13 @@ func handleRC(Parms *structures.Parms, rc int) int {
 		return RC.Skip
 	}
 
-	cli.ErrorMessage(*Parms, "La operación ha fallado con RC 0x%02X. Revisa el log: %s", rc, logName(*Parms))
+	cli.ErrorMessage(
+		*Parms,
+		"La operación ha fallado con RC %d (0x%02X). Revisa el log: %s",
+		rc,
+		rc,
+		logName(*Parms),
+	)
 	cli.Abort(rc, *Parms)
 	return RC.Skip
 }

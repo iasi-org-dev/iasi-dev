@@ -3,6 +3,7 @@ package runners
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"iasi-dev/internal/cli"
@@ -42,13 +43,20 @@ func Publish(Parms *structures.Parms) []string {
 // publishRepository delegates project discovery, applicability and publication semantics to iasi.quarto.
 func publishRepository(repository string, Parms structures.Parms) int {
 	parameters := []string{}
-	if Parms.Force {
-		parameters = append(parameters, "force = TRUE")
+
+	if Parms.Format != "" {
+		formats := strings.Split(Parms.Format, ",")
+		for i, format := range formats {
+			formats[i] = strconv.Quote(strings.TrimSpace(format))
+		}
+		parameters = append(parameters, "format = c("+strings.Join(formats, ", ")+")")
 	}
+
+	parameters = append(parameters, "path = "+strconv.Quote(filepath.Clean(repository)))
 
 	call := "iasi.quarto::publish(" + strings.Join(parameters, ", ") + ")"
 	expression := "rc = " + call + "; quit(status = as.integer(rc), save = \"no\")"
 
-	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	result := commands.RunLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
 	return result.RC
 }

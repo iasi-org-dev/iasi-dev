@@ -56,6 +56,6 @@ func buildRepository(repository string, Parms structures.Parms) int {
 	call := "iasi.quarto::build(" + strings.Join(parameters, ", ") + ")"
 	expression := "rc = " + call + "; quit(status = as.integer(rc), save = \"no\")"
 
-	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	result := commands.RunLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
 	return result.RC
 }

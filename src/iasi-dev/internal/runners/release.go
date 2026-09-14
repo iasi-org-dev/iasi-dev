@@ -41,6 +41,6 @@ func Release(Parms *structures.Parms) []string {
 // releaseRepository delegates project discovery, applicability and release semantics to iasi.quarto.
 func releaseRepository(repository string, Parms structures.Parms) int {
 	expression := "rc = iasi.quarto::release(); quit(status = as.integer(rc), save = \"no\")"
-	result := commands.RunProtocolLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
+	result := commands.RunLogged(repository, Parms.LogFile, "Rscript", "-e", expression)
 	return result.RC
 }
